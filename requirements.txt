@@ -1,0 +1,44 @@
+# ═══════════════════════════════════════════════════════
+# Stuart-AI: Personal Cognitive Agent — Dependencies
+# ═══════════════════════════════════════════════════════
+
+# ── Core Framework ──────────────────────────────────────
+fastapi
+uvicorn[standard]
+pydantic-settings
+python-dotenv
+orjson
+aiofiles
+httpx
+requests
+
+# ── Desktop GUI ─────────────────────────────────────────
+pywebview[winforms]
+pywin32
+
+# ── LLM Providers ──────────────────────────────────────
+openai
+
+# ── Voice & Vision ──────────────────────────────────────
+deepgram-sdk==3.*
+
+# ── Input Monitoring (Stealth) ──────────────────────────
+pynput
+
+# ── Database & Vector Store ─────────────────────────────
+psycopg2-binary
+qdrant-client
+
+# ── File Watching & Scheduling ──────────────────────────
+watchdog
+schedule
+
+# ── Knowledge & Research ────────────────────────────────
+wikipedia
+feedparser
+
+# ── Communication Channels ──────────────────────────────
+python-telegram-bot
+
+# ── Testing ─────────────────────────────────────────────
+pytest

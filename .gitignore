@@ -1,0 +1,35 @@
+# ═══════════════════════════════════════════
+# Stuart-AI .gitignore
+# ═══════════════════════════════════════════
+
+# --- Environment ---
+.env
+.venv/
+venv/
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+*.egg
+
+# --- IDE ---
+.vscode/
+.idea/
+
+# --- Build artifacts ---
+dist/
+build/
+*.spec
+
+# --- Runtime data (local only) ---
+database/
+logs/
+data/sandbox/
+data/notes.md
+.stuart_checkpoints/
+.pytest_cache/
+
+# --- Secrets ---
+ai_providers.json

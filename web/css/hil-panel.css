@@ -1,0 +1,351 @@
+/* ====================================================================
+   HIL CONTROL PANEL — Dynamic Human-In-The-Loop Interface
+   Phase 10 — Stuart Personal Cognitive Agent
+   ==================================================================== */
+
+/* ── Panel Container ────────────────────────────────────────────────── */
+#hil-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 380px;
+    height: 100vh;
+    background: var(--bg-glass-heavy);
+    backdrop-filter: blur(32px) saturate(180%);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
+    border-left: 1px solid var(--glass-border);
+    display: flex;
+    flex-direction: column;
+    z-index: 10000;
+    transform: translateX(100%);
+    transition: transform 0.4s var(--ease-premium);
+    box-shadow: -20px 0 60px rgba(0, 0, 0, 0.6);
+    font-family: var(--font-body);
+    overflow: hidden;
+}
+
+#hil-panel.open {
+    transform: translateX(0);
+}
+
+/* ── Panel Header ───────────────────────────────────────────────────── */
+.hil-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-md) var(--space-lg);
+    border-bottom: 1px solid var(--glass-border);
+    flex-shrink: 0;
+}
+
+.hil-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.hil-title-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--glass-light);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--accent-primary);
+}
+
+.hil-title h3 {
+    font-family: var(--font-display);
+    font-size: var(--font-sm);
+    font-weight: 700;
+    color: var(--pure-white);
+    letter-spacing: 0.02em;
+    margin: 0;
+}
+
+.hil-title-sub {
+    font-size: var(--font-xs);
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+    margin: 0;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.hil-close-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: var(--glass-light);
+    border-radius: var(--radius-md);
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s var(--ease-premium);
+}
+
+.hil-close-btn:hover {
+    background: var(--glass-medium);
+    color: var(--pure-white);
+}
+
+/* ── Panel Body (scrollable) ────────────────────────────────────────── */
+.hil-panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+/* ── Section Cards ──────────────────────────────────────────────────── */
+.hil-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.hil-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-md);
+    background: var(--glass-ultra-light);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.hil-card-title {
+    font-family: var(--font-body);
+    font-size: var(--font-xs);
+    font-weight: 800;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+/* ── Autonomy Slider Section ────────────────────────────────────────── */
+.hil-autonomy-body {
+    padding: var(--space-lg) var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+/* Current state indicator */
+.autonomy-current-state {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    background: var(--glass-ultra-light);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+}
+
+.autonomy-state-name {
+    font-size: var(--font-sm);
+    font-weight: 800;
+    color: var(--pure-white);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.autonomy-state-detail {
+    font-size: var(--font-xs);
+    color: var(--text-dim);
+    margin-top: 2px;
+    line-height: 1.4;
+}
+
+/* ── Risk Threshold Sliders ─────────────────────────────────────────── */
+.hil-thresholds-body {
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.threshold-btn {
+    flex: 1;
+    padding: var(--space-sm) 0;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-ultra-light);
+    color: var(--text-dim);
+    border-radius: var(--radius-md);
+    font-size: var(--font-xs);
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s var(--ease-premium);
+}
+
+.threshold-btn:hover {
+    background: var(--glass-light);
+    color: var(--text-secondary);
+}
+
+/* ── Approval Queue ──────────────────────────────────────────────────── */
+.hil-approval-item {
+    padding: var(--space-md);
+    border-bottom: 1px solid var(--glass-border);
+    animation: slide-in-hil 0.4s var(--ease-premium) forwards;
+}
+
+.approval-tool {
+    font-size: var(--font-sm);
+    font-weight: 700;
+    color: var(--pure-white);
+}
+
+.approval-action-text {
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+    margin-top: 4px;
+    font-family: var(--font-mono);
+}
+
+.approval-btn {
+    flex: 1;
+    padding: var(--space-sm) 0;
+    border-radius: var(--radius-md);
+    border: none;
+    cursor: pointer;
+    font-size: var(--font-xs);
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    transition: all 0.2s var(--ease-premium);
+}
+
+.approval-btn.allow {
+    background: var(--success-green);
+    color: var(--pure-black);
+}
+
+.approval-btn.deny {
+    background: var(--glass-light);
+    border: 1px solid var(--glass-border);
+    color: var(--pure-white);
+}
+
+/* ── Stats Row ───────────────────────────────────────────────────────── */
+.hil-stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-sm);
+    padding: var(--space-md);
+}
+
+.hil-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-md) var(--space-sm);
+    background: var(--glass-ultra-light);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+}
+
+.hil-stat-value {
+    font-family: var(--font-display);
+    font-size: var(--font-lg);
+    font-weight: 800;
+    color: var(--pure-white);
+    line-height: 1;
+}
+
+.hil-stat-label {
+    font-size: var(--font-xs);
+    font-weight: 800;
+    color: var(--text-dim);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ── Panel Toggle Trigger Button (floating) ──────────────────────────── */
+#hil-panel-trigger {
+    position: fixed;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 100px;
+    background: var(--bg-glass-heavy);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-right: none;
+    border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 9999;
+    transition: all 0.3s var(--ease-premium);
+    gap: 6px;
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.4);
+}
+
+#hil-panel-trigger:hover {
+    background: var(--bg-elevated);
+    width: 38px;
+    color: var(--electric-cyan);
+}
+
+#hil-panel-trigger.panel-open {
+    right: 380px;
+}
+
+.hil-trigger-icon {
+    font-size: 14px;
+    color: var(--accent-primary);
+}
+
+.hil-trigger-label {
+    font-size: var(--font-xs);
+    font-weight: 800;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+}
+
+/* ── Approval count badge on trigger ────────────────────────────────── */
+.hil-trigger-count {
+    position: absolute;
+    top: var(--space-sm);
+    right: var(--space-xs);
+    width: var(--space-md);
+    height: var(--space-md);
+    background: var(--error-red);
+    border-radius: 50%;
+    font-size: var(--font-xs);
+    font-weight: 800;
+    color: var(--pure-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    display: none;
+    animation: pop-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.hil-trigger-count.visible {
+    display: flex;
+}
+
+@keyframes pop-in {
+    from { transform: scale(0); }
+    to   { transform: scale(1); }
+}

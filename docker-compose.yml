@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  stuart-agent:
+    build: .
+    container_name: stuart_core_agent
+    restart: unless-stopped
+    environment:
+      - HEADLESS_MODE=True
+      # The .env file will override/provide additional variables like TELEGRAM_BOT_TOKEN
+    env_file:
+      - .env
+    volumes:
+      # Mount persistent runtime directories so memory and logs survive container restarts
+      - ./data:/app/data
+      - ./database:/app/database
+      - ./logs:/app/logs
+      - ./.stuart_checkpoints:/app/.stuart_checkpoints
+      # Expose ai_providers.json if it exists outside, or it will be created inside
+      - ./ai_providers.json:/app/ai_providers.json
+    ports:
+      - "8000:8000"
+    depends_on:
+      - qdrant
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: stuart_qdrant_db
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+
+volumes:
+  qdrant_storage:

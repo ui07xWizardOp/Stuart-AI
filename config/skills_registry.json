@@ -1,0 +1,37 @@
+{
+  "skills": [
+    {
+      "name": "SystemMonitor",
+      "version": "1.0.0",
+      "filename": "system_monitor_plugin.py",
+      "description": "Monitors CPU, RAM, and disk usage. Adds /sysmon slash command.",
+      "author": "Stuart Community",
+      "source": {
+        "type": "bundled",
+        "content": "import os\nimport platform\nfrom core.plugin_manager import StuartPlugin\nfrom typing import Dict, Any\n\nclass SystemMonitorPlugin(StuartPlugin):\n    name = \"SystemMonitor\"\n    version = \"1.0.0\"\n    description = \"Reports system CPU, memory, and disk stats.\"\n\n    def on_load(self, context: Dict[str, Any]):\n        slash = context.get('slash_router')\n        if slash:\n            slash.register_command('/sysmon', self._cmd_sysmon, 'Show system resource usage')\n        logger = context.get('logger')\n        if logger:\n            logger.info('SystemMonitorPlugin loaded.')\n\n    def _cmd_sysmon(self, args: str) -> str:\n        try:\n            import shutil\n            total, used, free = shutil.disk_usage('/')\n            lines = [\n                '\\U0001f4bb **System Monitor**',\n                f'  OS: {platform.system()} {platform.release()}',\n                f'  Python: {platform.python_version()}',\n                f'  Disk Total: {total // (1024**3)} GB',\n                f'  Disk Used:  {used // (1024**3)} GB',\n                f'  Disk Free:  {free // (1024**3)} GB',\n            ]\n            return '\\n'.join(lines)\n        except Exception as e:\n            return f'Error: {e}'\n"
+      }
+    },
+    {
+      "name": "Pomodoro",
+      "version": "1.0.0",
+      "filename": "pomodoro_plugin.py",
+      "description": "Simple Pomodoro timer. Adds /pomodoro slash command.",
+      "author": "Stuart Community",
+      "source": {
+        "type": "bundled",
+        "content": "import threading\nimport time\nfrom core.plugin_manager import StuartPlugin\nfrom typing import Dict, Any\n\nclass PomodoroPlugin(StuartPlugin):\n    name = \"Pomodoro\"\n    version = \"1.0.0\"\n    description = \"A simple Pomodoro focus timer.\"\n\n    def on_load(self, context: Dict[str, Any]):\n        self._logger = context.get('logger')\n        slash = context.get('slash_router')\n        if slash:\n            slash.register_command('/pomodoro', self._cmd_pomodoro, 'Start a 25-min Pomodoro timer: /pomodoro [minutes]')\n        if self._logger:\n            self._logger.info('PomodoroPlugin loaded.')\n\n    def _cmd_pomodoro(self, args: str) -> str:\n        minutes = 25\n        if args.strip().isdigit():\n            minutes = int(args.strip())\n        def _timer():\n            time.sleep(minutes * 60)\n            if self._logger:\n                self._logger.info(f'Pomodoro complete! {minutes} minutes elapsed.')\n        t = threading.Thread(target=_timer, daemon=True)\n        t.start()\n        return f'\\U0001f345 Pomodoro started! Timer set for **{minutes} minutes**. You will see a log entry when it completes.'\n"
+      }
+    },
+    {
+      "name": "QuickNote",
+      "version": "1.0.0",
+      "filename": "quicknote_plugin.py",
+      "description": "Quickly save notes to a markdown file. Adds /note slash command.",
+      "author": "Stuart Community",
+      "source": {
+        "type": "bundled",
+        "content": "import os\nfrom datetime import datetime\nfrom core.plugin_manager import StuartPlugin\nfrom typing import Dict, Any\n\nclass QuickNotePlugin(StuartPlugin):\n    name = \"QuickNote\"\n    version = \"1.0.0\"\n    description = \"Save quick notes to a markdown file.\"\n\n    def on_load(self, context: Dict[str, Any]):\n        slash = context.get('slash_router')\n        if slash:\n            slash.register_command('/note', self._cmd_note, 'Save a quick note: /note <text>')\n        logger = context.get('logger')\n        if logger:\n            logger.info('QuickNotePlugin loaded.')\n\n    def _cmd_note(self, args: str) -> str:\n        if not args.strip():\n            return 'Please provide note text: `/note <your note>`'\n        notes_path = os.path.join('data', 'notes.md')\n        os.makedirs('data', exist_ok=True)\n        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')\n        entry = f'\\n## {timestamp}\\n{args.strip()}\\n'\n        with open(notes_path, 'a', encoding='utf-8') as f:\n            f.write(entry)\n        return f'\\U0001f4dd Note saved to `{notes_path}`.'\n"
+      }
+    }
+  ]
+}

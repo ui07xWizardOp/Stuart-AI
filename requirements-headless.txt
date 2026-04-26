@@ -1,0 +1,38 @@
+# ═══════════════════════════════════════════════════════
+# Stuart-AI: Personal Cognitive Agent — Headless Dependencies
+# Optimized for Docker/Server deployment (No GUI/Win32)
+# ═══════════════════════════════════════════════════════
+
+# ── Core Framework ──────────────────────────────────────
+fastapi
+uvicorn[standard]
+pydantic-settings
+python-dotenv
+orjson
+aiofiles
+httpx
+requests
+
+# ── LLM Providers ──────────────────────────────────────
+openai
+
+# ── Voice & Vision ──────────────────────────────────────
+deepgram-sdk==3.*
+
+# ── Database & Vector Store ─────────────────────────────
+psycopg2-binary
+qdrant-client
+
+# ── File Watching & Scheduling ──────────────────────────
+watchdog
+schedule
+
+# ── Knowledge & Research ────────────────────────────────
+wikipedia
+feedparser
+
+# ── Communication Channels ──────────────────────────────
+python-telegram-bot
+
+# ── Testing ─────────────────────────────────────────────
+pytest

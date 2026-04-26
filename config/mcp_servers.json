@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "sqlite": {
+      "command": "python",
+      "args": ["-m", "mcp_sqlite", "--db-path", "data/stuart_mcp.db"],
+      "enabled": false
+    }
+  }
+}

@@ -1,0 +1,138 @@
+[
+    {
+        "name": "Groq",
+        "baseURL": "https://api.groq.com/openai/v1",
+        "apiKey": "YOUR_GROQ_API_KEY_HERE",
+        "apiKeys": [
+            "YOUR_GROQ_API_KEY_1",
+            "YOUR_GROQ_API_KEY_2"
+        ],
+        "models": [
+            "llama-3.3-70b-versatile",
+            "llama-3.1-8b-instant",
+            "openai/gpt-oss-120b",
+            "openai/gpt-oss-20b",
+            "moonshotai/kimi-k2-instruct",
+            "qwen/qwen3-32b",
+            "meta-llama/llama-4-scout-17b-16e-instruct",
+            "meta-llama/llama-4-maverick-17b-128e-instruct"
+        ],
+        "visionModels": [
+            "meta-llama/llama-4-scout-17b-16e-instruct",
+            "meta-llama/llama-4-maverick-17b-128e-instruct"
+        ],
+        "supportsVision": true,
+        "defaultSecondary": true,
+        "defaultVisionSecondary": true,
+        "defaultModel": "openai/gpt-oss-120b",
+        "defaultVisionModel": "meta-llama/llama-4-maverick-17b-128e-instruct"
+    },
+    {
+        "name": "Cerebras",
+        "baseURL": "https://api.cerebras.ai/v1",
+        "apiKey": "YOUR_CEREBRAS_API_KEY_HERE",
+        "apiKeys": [
+            "YOUR_CEREBRAS_API_KEY_1",
+            "YOUR_CEREBRAS_API_KEY_2"
+        ],
+        "models": [
+            "llama-3.3-70b",
+            "llama3.1-8b",
+            "qwen-3-32b",
+            "gpt-oss-120b",
+            "qwen-3-235b-a22b-instruct-2507",
+            "zai-glm-4.7"
+        ],
+        "visionModels": [],
+        "supportsVision": false,
+        "defaultPrimary": true,
+        "defaultModel": "gpt-oss-120b"
+    },
+    {
+        "name": "Gemini",
+        "baseURL": "https://generativelanguage.googleapis.com/v1beta/openai/",
+        "apiKey": "YOUR_GEMINI_API_KEY_HERE",
+        "apiKeys": [
+            "YOUR_GEMINI_API_KEY_1",
+            "YOUR_GEMINI_API_KEY_2"
+        ],
+        "models": [
+            "gemini-2.0-flash",
+            "gemini-2.0-flash-lite",
+            "gemini-2.5-flash-lite",
+            "gemini-3-flash-preview",
+            "gemini-3-pro-preview"
+        ],
+        "visionModels": [
+            "gemini-2.0-flash",
+            "gemini-2.5-flash-lite",
+            "gemini-3-flash-preview",
+            "gemini-3-pro-preview"
+        ],
+        "supportsVision": true,
+        "defaultVisionPrimary": true,
+        "defaultModel": "gemini-3-flash-preview",
+        "defaultVisionModel": "gemini-3-flash-preview"
+    },
+    {
+        "name": "OpenRouter",
+        "baseURL": "https://openrouter.ai/api/v1",
+        "apiKey": "YOUR_OPENROUTER_API_KEY_HERE",
+        "apiKeys": [
+            "YOUR_OPENROUTER_API_KEY_1"
+        ],
+        "models": [
+            {
+                "modelName": "qwen/qwen3-32b",
+                "description": "qwen/qwen3-32b (via Cerebras)",
+                "requestParams": {
+                    "provider": {
+                        "only": [
+                            "Cerebras"
+                        ]
+                    }
+                }
+            },
+            {
+                "modelName": "meta-llama/llama-3.3-70b-instruct",
+                "description": "Llama 3.3 70B (via Cerebras)",
+                "requestParams": {
+                    "provider": {
+                        "only": [
+                            "Cerebras"
+                        ]
+                    }
+                }
+            },
+            {
+                "modelName": "meta-llama/llama-4-maverick",
+                "description": "Llama 4 Maverick (via Groq)",
+                "requestParams": {
+                    "provider": {
+                        "only": [
+                            "Groq"
+                        ]
+                    }
+                }
+            },
+            "qwen/qwen3-32b",
+            "meta-llama/llama-4-maverick"
+        ],
+        "visionModels": [
+            {
+                "modelName": "meta-llama/llama-4-maverick",
+                "description": "Llama 4 Maverick Vision (via Groq)",
+                "requestParams": {
+                    "provider": {
+                        "only": [
+                            "Groq"
+                        ]
+                    }
+                }
+            },
+            "meta-llama/llama-4-maverick"
+        ],
+        "supportsVision": true,
+        "defaultModel": "qwen/qwen3-32b"
+    }
+]

@@ -1,0 +1,255 @@
+/* Live Interview Interface Styles - Unified Crystal Pass */
+
+:root {
+    --bg-transparency: 0.80; 
+    --content-transparency: 0.20; 
+    --code-transparency: 0.50; 
+}
+
+.live-interview-container {
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-glass-heavy);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    backdrop-filter: blur(16px);
+    overflow: hidden;
+    box-sizing: border-box;
+    position: relative;
+}
+
+/* Header */
+.live-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-md) var(--space-lg);
+    background: var(--bg-glass);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--glass-border);
+    flex-shrink: 0;
+    min-height: 64px;
+}
+
+.session-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    animation: statusPulse 2s var(--ease-premium) infinite;
+}
+
+@keyframes statusPulse {
+    0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 247, 255, 0.4); }
+    50% { opacity: 0.6; transform: scale(1.1); box-shadow: 0 0 10px 4px rgba(0, 247, 255, 0.2); }
+}
+
+.header-controls {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+}
+
+.mute-btn, .end-btn, .reset-btn {
+    background: var(--glass-ultra-light);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    padding: 0.5rem 1.25rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.3s var(--ease-premium);
+    backdrop-filter: blur(8px);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.mute-btn:hover, .end-btn:hover {
+    background: var(--glass-medium);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.mute-btn.muted {
+    background: rgba(255, 87, 87, 0.15);
+    border-color: var(--error-red);
+    color: var(--error-red);
+}
+
+/* Main Content Area */
+.interview-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.conversation-stream {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-lg);
+    scroll-behavior: smooth;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+/* Conversation Messages */
+.message {
+    opacity: 0;
+    animation: fadeInUp 0.5s var(--ease-premium) forwards;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.message.interviewer, .message.ai-response {
+    background: var(--bg-glass);
+    border-left: 3px solid var(--glass-border);
+    padding: var(--space-lg);
+    border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+    backdrop-filter: blur(8px);
+}
+
+.message.interviewer .label, .message.ai-response .label {
+    color: var(--accent-primary);
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.75rem;
+    display: block;
+}
+
+/* Streaming Text */
+.streaming-text {
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+
+/* Code Blocks */
+.message .code-block, .code-block-container {
+    margin: 1.25rem 0 !important;
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.code-header, .code-block-header {
+    background: var(--glass-ultra-light);
+    padding: 0.5rem 1rem !important;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--glass-border);
+    font-family: var(--font-mono);
+}
+
+.code-block pre, .code-block-container pre {
+    padding: 1.25rem !important;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+
+/* Complexity Analysis */
+.complexity-analysis {
+    background: var(--glass-ultra-light);
+    border: 1px solid var(--warning-orange);
+    border-left-width: 4px;
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin: 1.5rem 0;
+}
+
+/* Activity Indicator */
+.activity-indicator {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-glass-heavy);
+    backdrop-filter: blur(12px);
+    border-radius: var(--radius-pill);
+    padding: 0.75rem 1.75rem;
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    z-index: 100;
+}
+
+.listening-state {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--accent-primary);
+    font-weight: 600;
+    font-size: 0.9rem;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Scrollbar Styling */
+.conversation-stream::-webkit-scrollbar-thumb {
+    background: var(--glass-medium);
+    border-radius: var(--radius-pill);
+}
+
+.conversation-stream::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-primary);
+}
+
+/* Text Selection */
+::selection {
+    background: var(--accent-glow);
+    color: var(--pure-white);
+}
+
+/* Animation integration */
+.message.interviewer .streaming-text, .message.ai-response .streaming-text {
+    border-right: 2px solid var(--accent-primary);
+    animation: blinkCursor 0.6s step-end infinite;
+}
+
+@keyframes blinkCursor {
+    50% { border-color: transparent; }
+}
+
+
+.message ul, .message ol, .streaming-text ul, .streaming-text ol {
+    margin: 0.5rem 0 !important;
+    padding-left: 1.5rem;
+}
+
+.message li, .streaming-text li {
+    margin: 0.2rem 0 !important;
+    line-height: 1.5;
+}
+
+/* Ensure proper spacing between headings and adjacent content */
+.message h1 + p, .message h2 + p, .message h3 + p, .message h4 + p, .message h5 + p, .message h6 + p,
+.streaming-text h1 + p, .streaming-text h2 + p, .streaming-text h3 + p, .streaming-text h4 + p, .streaming-text h5 + p, .streaming-text h6 + p {
+    margin-top: 0 !important;
+}
+
+.message p + h1, .message p + h2, .message p + h3, .message p + h4, .message p + h5, .message p + h6,
+.streaming-text p + h1, .streaming-text p + h2, .streaming-text p + h3, .streaming-text p + h4, .streaming-text p + h5, .streaming-text p + h6 {
+    margin-top: 1.3rem !important;
+} 

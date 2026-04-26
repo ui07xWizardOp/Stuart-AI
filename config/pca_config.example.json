@@ -1,0 +1,191 @@
+{
+  "system_mode": "FULL",
+  "enable_dev_mode": false,
+  
+  "database": {
+    "host": "localhost",
+    "port": 5432,
+    "name": "pca_db",
+    "user": "pca_user",
+    "password": "your_secure_password_here",
+    "min_connections": 2,
+    "max_connections": 10,
+    "connection_timeout": 30,
+    "command_timeout": 60
+  },
+  
+  "vector_db": {
+    "provider": "qdrant",
+    "host": "localhost",
+    "port": 6333,
+    "api_key": "",
+    "collection_prefix": "pca",
+    "embedding_dimension": 1536
+  },
+  
+  "agent_runtime": {
+    "max_iterations_per_task": 20,
+    "max_tool_calls_per_task": 50,
+    "max_llm_calls_per_task": 30,
+    "max_execution_time_per_task": 300,
+    "state_persistence_interval": 1,
+    "enable_reflection": true,
+    "reflection_trigger_on_failure": true,
+    "reflection_trigger_every_n_iterations": 5
+  },
+  
+  "model_router": {
+    "default_provider": "openai",
+    "enable_failover": true,
+    "enable_cost_prediction": true,
+    "warm_up_strategy": "lazy",
+    "warm_up_models": [],
+    "circuit_breaker_enabled": true,
+    "circuit_breaker_failure_threshold": 0.5,
+    "circuit_breaker_timeout": 60
+  },
+  
+  "prompt_manager": {
+    "prompt_repository_path": "prompts",
+    "enable_versioning": true,
+    "enable_ab_testing": false,
+    "enable_hot_reload": true,
+    "hot_reload_interval": 60
+  },
+  
+  "task_queue": {
+    "backend": "redis",
+    "max_queue_depth": 1000,
+    "worker_count": 10,
+    "backpressure_threshold": 800,
+    "task_timeout": 600,
+    "enable_priority": true
+  },
+  
+  "context_manager": {
+    "max_tokens": 8000,
+    "system_instructions_budget": 500,
+    "current_task_budget": 1000,
+    "conversation_history_budget": 2000,
+    "tool_results_budget": 1500,
+    "knowledge_budget": 2000,
+    "memory_budget": 1000,
+    "freshness_decay_function": "exponential",
+    "freshness_half_life_hours": 24.0,
+    "enable_deduplication": true,
+    "deduplication_similarity_threshold": 0.9
+  },
+  
+  "rate_limiter": {
+    "llm_calls_per_minute": 60,
+    "llm_calls_per_hour": 1000,
+    "tool_executions_per_minute": 30,
+    "workflow_executions_per_hour": 100,
+    "api_calls_per_minute": 100,
+    "cost_limit_per_hour": 10.0,
+    "cost_limit_per_day": 100.0,
+    "cost_limit_per_workflow": 5.0,
+    "enable_circuit_breakers": true,
+    "circuit_breaker_failure_rate": 0.5,
+    "circuit_breaker_recovery_timeout": 60
+  },
+  
+  "approval_system": {
+    "enable_approvals": true,
+    "approval_timeout": 300,
+    "enable_escalation": true,
+    "escalation_timeout": 600,
+    "enable_bulk_approval": true,
+    "auto_approve_low_risk": false
+  },
+  
+  "tool_executor": {
+    "default_sandbox_isolation": "PROCESS",
+    "enable_capability_tokens": true,
+    "enable_network_isolation": true,
+    "enable_dlp_scanning": true,
+    "execution_timeout": 60,
+    "cpu_quota_ms": 10000,
+    "memory_quota_bytes": 536870912,
+    "network_bandwidth_bps": 10485760,
+    "disk_write_quota_bytes": 104857600,
+    "enable_execution_recording": true
+  },
+  
+  "workflow_engine": {
+    "enable_trust_levels": true,
+    "enable_compensating_actions": true,
+    "enable_idempotency": true,
+    "idempotency_token_ttl": 86400,
+    "max_workflow_steps": 100,
+    "enable_versioning": true
+  },
+  
+  "memory_system": {
+    "short_term_memory_size": 100,
+    "enable_memory_consolidation": true,
+    "consolidation_interval": 3600,
+    "memory_importance_threshold": 0.5,
+    "enable_memory_distillation": true,
+    "distillation_interval": 86400,
+    "retention_policy_days": 90
+  },
+  
+  "knowledge_manager": {
+    "chunk_size": 512,
+    "chunk_overlap": 50,
+    "enable_versioning": true,
+    "enable_source_trust_ranking": true,
+    "enable_knowledge_aging": true,
+    "knowledge_ttl_days": 365,
+    "daily_ingestion_enabled": true,
+    "daily_ingestion_time": "02:00"
+  },
+  
+  "event_bus": {
+    "enable_persistence": true,
+    "enable_event_ordering": true,
+    "ordering_guarantee": "per-workflow",
+    "event_retention_days": 30,
+    "enable_dead_letter_queue": true,
+    "enable_event_replay": true
+  },
+  
+  "logging": {
+    "log_level": "INFO",
+    "enable_structured_logging": true,
+    "log_format": "json",
+    "log_file_path": "logs/pca.log",
+    "enable_log_rotation": true,
+    "log_rotation_max_bytes": 10485760,
+    "log_rotation_backup_count": 5,
+    "enable_console_output": true
+  },
+  
+  "tracing": {
+    "enable_tracing": true,
+    "tracing_backend": "jaeger",
+    "tracing_endpoint": "http://localhost:14268/api/traces",
+    "sampling_rate": 1.0,
+    "enable_trace_id_propagation": true
+  },
+  
+  "cognitive_maintenance": {
+    "enable_memory_distillation": true,
+    "enable_knowledge_aging": true,
+    "enable_context_entropy_control": true,
+    "enable_plan_library_learning": true,
+    "maintenance_schedule": "0 2 * * *",
+    "enable_automatic_gc": true
+  },
+  
+  "security": {
+    "enable_capability_tokens": true,
+    "enable_network_isolation": true,
+    "enable_dlp_scanning": true,
+    "enable_prompt_injection_defense": true,
+    "enable_data_exfiltration_detection": true,
+    "allowed_filesystem_paths": ["/tmp", "/workspace"],
+    "blocked_network_domains": []
+  }
+}
