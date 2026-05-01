@@ -6,7 +6,7 @@ and plan generation for common task patterns.
 """
 
 import pytest
-from hybrid_planner import (
+from cognitive.hybrid_planner import (
     HybridPlanner,
     PlanningContext,
     TaskComplexity,

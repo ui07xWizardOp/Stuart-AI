@@ -9,11 +9,8 @@ import time
 import schedule
 
 # Mock observability module
-mock_logger = MagicMock()
-sys.modules['observability'] = MagicMock()
-sys.modules['observability'].get_logging_system = Mock(return_value=mock_logger)
 
-from scheduler import AutomationScheduler
+from automation.scheduler import AutomationScheduler
 
 def test_scheduler_intervals():
     # Make sure schedule is clear natively

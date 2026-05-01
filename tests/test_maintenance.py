@@ -6,9 +6,6 @@ import pytest
 from unittest.mock import Mock, MagicMock
 
 # Mock observability module
-mock_logger = MagicMock()
-sys.modules['observability'] = MagicMock()
-sys.modules['observability'].get_logging_system = Mock(return_value=mock_logger)
 
 from cognitive.maintenance import CognitiveMaintenanceEngine
 

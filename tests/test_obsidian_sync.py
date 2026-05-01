@@ -9,11 +9,8 @@ from unittest.mock import Mock, MagicMock
 import sys
 
 # Mock observability module
-mock_logger = MagicMock()
-sys.modules['observability'] = MagicMock()
-sys.modules['observability'].get_logging_system = Mock(return_value=mock_logger)
 
-from obsidian_sync import ObsidianVaultSynchronizer
+from automation.obsidian_sync import ObsidianVaultSynchronizer
 
 def test_markdown_parsing(tmp_path):
     # Setup test file

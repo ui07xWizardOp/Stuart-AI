@@ -7,18 +7,11 @@ from pathlib import Path
 from unittest.mock import Mock, MagicMock
 
 # Mock observability module
-mock_logger = MagicMock()
-sys.modules['observability'] = MagicMock()
-sys.modules['observability'].get_logging_system = Mock(return_value=mock_logger)
 
 # Mock events module
 mock_event_bus = MagicMock()
-sys.modules['events'] = MagicMock()
-sys.modules['events'].get_event_bus = Mock(return_value=mock_event_bus)
-sys.modules['events'].EventType = MagicMock()
-sys.modules['events'].EventType.CONFIG_HOT_RELOADED = "CONFIG_HOT_RELOADED"
 
-from prompt_manager import PromptManager
+from cognitive.prompt_manager import PromptManager
 
 
 def test_prompt_inline_fallback(tmp_path):

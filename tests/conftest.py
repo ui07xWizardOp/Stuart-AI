@@ -1,12 +1,10 @@
-"""
-Pytest configuration for Stuart-AI test suite.
-Ensures the project root is on sys.path so all package imports resolve.
-"""
-
 import sys
 import os
 
-# Add project root to sys.path
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
+root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, root_dir)
+
+for entry in os.listdir(root_dir):
+    full_path = os.path.join(root_dir, entry)
+    if os.path.isdir(full_path) and not entry.startswith('.') and entry not in ('tests', 'venv'):
+        sys.path.insert(0, full_path)

@@ -7,7 +7,7 @@ Tests span creation, lifecycle management, hierarchy, and queries.
 import time
 from datetime import datetime
 
-from tracing_system import (
+from observability.tracing_system import (
     TracingSystem,
     Span,
     SpanContext,

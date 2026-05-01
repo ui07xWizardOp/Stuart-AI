@@ -69,8 +69,28 @@ class ApiCallerTool(BaseTool):
 
         req = urllib.request.Request(url, data=data, headers=headers, method=method)
 
+
+        import urllib.parse
+        import ipaddress
+        import socket
+
+        parsed_url = urllib.parse.urlparse(url)
+        if parsed_url.scheme not in ('http', 'https'):
+            return ToolResult(success=False, error=f"Invalid URL scheme: {parsed_url.scheme}. Only http/https are allowed.")
+
+        # Block localhost and internal IPs to prevent SSRF
+        try:
+            # Resolve hostname to IP to prevent DNS rebinding or obfuscation
+            ip = socket.gethostbyname(parsed_url.hostname)
+            ip_obj = ipaddress.ip_address(ip)
+            if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip == "169.254.169.254":
+                return ToolResult(success=False, error="Local and internal networks are restricted.")
+        except Exception:
+            pass
+
         try:
             with urllib.request.urlopen(req, timeout=timeout) as response:
+
                 status_code = response.getcode()
                 response_bytes = response.read(1024 * 1024) # Cap read at 1MB to prevent blast
                 try:

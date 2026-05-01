@@ -9,7 +9,7 @@ import pytest
 from datetime import datetime
 from unittest.mock import Mock, patch, MagicMock
 
-from hybrid_planner import (
+from cognitive.hybrid_planner import (
     HybridPlanner,
     TaskComplexity,
     PlanStatus,

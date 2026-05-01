@@ -7,11 +7,8 @@ import pytest
 from unittest.mock import Mock, MagicMock, patch
 
 # Mock observability module
-mock_logger = MagicMock()
-sys.modules['observability'] = MagicMock()
-sys.modules['observability'].get_logging_system = Mock(return_value=mock_logger)
 
-from orchestrator import Orchestrator
+from core.orchestrator import Orchestrator
 from memory.short_term import MemoryRole
 
 def test_orchestrator_final_answer_breakout():

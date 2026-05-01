@@ -4,7 +4,7 @@ Tests for Database Query Tool (Task 15.4)
 
 import sqlite3
 import pytest
-from database_tool import DatabaseQueryTool
+from tools.core.database_tool import DatabaseQueryTool
 
 
 @pytest.fixture

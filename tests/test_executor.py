@@ -39,15 +39,9 @@ mock_logger.error = Mock()
 mock_event_bus = Mock()
 mock_event_bus.publish = Mock()
 
-sys.modules['observability'] = MagicMock()
-sys.modules['observability'].get_logging_system = Mock(return_value=mock_logger)
 sys.modules['observability'].get_tracing_system = Mock(return_value=mock_tracer)
 sys.modules['observability'].get_correlation_id = Mock(return_value="test-correlation-id")
 
-sys.modules['events'] = MagicMock()
-sys.modules['events'].get_event_bus = Mock(return_value=mock_event_bus)
-sys.modules['events'].EventType = MagicMock()
-sys.modules['events'].Event = MagicMock()
 
 # Mock hybrid_planner module (only the classes we need)
 import importlib.util

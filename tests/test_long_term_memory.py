@@ -7,11 +7,8 @@ import pytest
 from unittest.mock import Mock, MagicMock
 
 # Mock observability module
-mock_logger = MagicMock()
-sys.modules['observability'] = MagicMock()
-sys.modules['observability'].get_logging_system = Mock(return_value=mock_logger)
 
-from long_term import LongTermMemory
+from memory.long_term import LongTermMemory
 
 
 @pytest.fixture
