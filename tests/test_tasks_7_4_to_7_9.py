@@ -13,8 +13,8 @@ mock_span.set_attribute = Mock()
 mock_tracer = Mock()
 mock_tracer.start_span = Mock(return_value=mock_span)
 
-sys.modules['observability'].get_logging_system = Mock(return_value=Mock())
-sys.modules['observability'].get_tracing_system = Mock(return_value=mock_tracer)
+
+
 sys.modules['observability'].get_correlation_id = Mock(return_value='test')
 sys.modules['observability'].get_trace_id = Mock(return_value='test')
 

@@ -39,7 +39,7 @@ mock_logger.error = Mock()
 mock_event_bus = Mock()
 mock_event_bus.publish = Mock()
 
-sys.modules['observability'].get_tracing_system = Mock(return_value=mock_tracer)
+
 sys.modules['observability'].get_correlation_id = Mock(return_value="test-correlation-id")
 
 

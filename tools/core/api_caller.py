@@ -102,10 +102,13 @@ class ApiCallerTool(BaseTool):
                 parsed_url.fragment
             ))
 
+
             # Pass the original host in headers to ensure virtual hosting routing works
             req_kwargs = {"url": safe_url}
             if hasattr(req, 'data'): req_kwargs['data'] = req.data
+            if hasattr(req, 'method'): req_kwargs['method'] = req.method
             safe_req = urllib.request.Request(**req_kwargs)
+
             safe_req.add_header("Host", parsed_url.hostname)
 
             # Copy other headers

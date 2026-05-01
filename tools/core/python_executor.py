@@ -92,6 +92,7 @@ try:
     exec(compiled_code, isolated_globals, {{}})
 except Exception as e:
     print(f"{{type(e).__name__}}: {{e}}", file=sys.stderr)
+    sys.exit(1)
 """
         
         fd, temp_path = tempfile.mkstemp(suffix=".py")
