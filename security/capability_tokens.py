@@ -11,6 +11,7 @@ from typing import Dict, List, Optional
 from dataclasses import dataclass, field
 
 from observability import get_logging_system
+import logging
 
 
 @dataclass
@@ -56,7 +57,11 @@ class CapabilityTokenSystem:
     """
     
     def __init__(self, default_ttl_sec: float = 300.0):
-        self.logger = get_logging_system()
+        
+        try:
+            self.logger = get_logging_system()
+        except Exception:
+            self.logger = logging.getLogger(__name__)
         self.default_ttl_sec = default_ttl_sec
         # Internal store: UUID -> CapabilityToken
         self._tokens: Dict[str, CapabilityToken] = {}
