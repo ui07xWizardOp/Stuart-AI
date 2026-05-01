@@ -9,18 +9,12 @@ from typing import Any, Dict
 from unittest.mock import Mock, MagicMock
 
 # Mock observability module
-mock_logger = MagicMock()
-sys.modules['observability'] = MagicMock()
-sys.modules['observability'].get_logging_system = Mock(return_value=mock_logger)
 
 # Mock core executor context
-sys.modules['core'] = MagicMock()
-sys.modules['core.executor'] = MagicMock()
-sys.modules['core.executor'].ExecutionContext = MagicMock()
 
-from base import BaseTool, CapabilityDescriptor, ToolRiskLevel, ToolResult
+from tools.base import BaseTool, CapabilityDescriptor, ToolRiskLevel, ToolResult
 from registry import ToolRegistry
-from tool_executor import ToolSandboxExecutor, RestrictedRuntimeTimeoutError
+from tools.tool_executor import ToolSandboxExecutor, RestrictedRuntimeTimeoutError
 
 class MockDataTool(BaseTool):
     def __init__(self):

@@ -7,14 +7,10 @@ from unittest.mock import Mock, MagicMock
 import time
 
 # Mock observability module
-mock_logger = MagicMock()
-sys.modules['observability'] = MagicMock()
-sys.modules['observability'].get_logging_system = Mock(return_value=mock_logger)
 
 # Mock hybrid_planner
-sys.modules['hybrid_planner'] = MagicMock()
 
-from model_router import ModelRouter, ModelTier, ModelEndpoint, CircuitBreaker
+from core.model_router import ModelRouter, ModelTier, ModelEndpoint, CircuitBreaker
 
 def test_circuit_breaker():
     breaker = CircuitBreaker(failure_threshold=2, reset_timeout_sec=0.1)

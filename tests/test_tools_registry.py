@@ -5,7 +5,7 @@ Tests for Tool Registry (Task 11)
 import pytest
 from typing import Any, Dict
 
-from base import BaseTool, CapabilityDescriptor, ToolRiskLevel, ToolResult
+from tools.base import BaseTool, CapabilityDescriptor, ToolRiskLevel, ToolResult
 from registry import ToolRegistry
 
 class MockTool(BaseTool):

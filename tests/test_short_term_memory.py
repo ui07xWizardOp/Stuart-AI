@@ -7,11 +7,8 @@ import pytest
 from unittest.mock import Mock, MagicMock
 
 # Mock observability module
-mock_logger = MagicMock()
-sys.modules['observability'] = MagicMock()
-sys.modules['observability'].get_logging_system = Mock(return_value=mock_logger)
 
-from short_term import ShortTermMemory, MemoryRole
+from memory.short_term import ShortTermMemory, MemoryRole
 
 def test_short_term_fifo_eviction():
     mem = ShortTermMemory(capacity=3)

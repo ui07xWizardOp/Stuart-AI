@@ -7,11 +7,8 @@ import pytest
 from unittest.mock import Mock, MagicMock
 
 # Mock observability module
-mock_logger = MagicMock()
-sys.modules['observability'] = MagicMock()
-sys.modules['observability'].get_logging_system = Mock(return_value=mock_logger)
 
-from context_manager import ContextManager
+from core.context_manager import ContextManager
 from memory.short_term import MemoryRole, MemoryEntry
 
 def test_context_manager_trim_working_memory():

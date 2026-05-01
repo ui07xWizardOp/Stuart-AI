@@ -94,14 +94,14 @@ class VectorDatabase:
         if not query_vector:
             return []
             
-        search_result = self.client.search(
+        search_result = self.client.query_points(
             collection_name=self.collection_name,
-            query_vector=query_vector,
+            query=query_vector,
             limit=limit
         )
         
         results = []
-        for hit in search_result:
+        for hit in search_result.points:
             results.append({
                 "score": hit.score,
                 "text": hit.payload.get("text", ""),

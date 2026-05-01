@@ -4,7 +4,7 @@ Tests for Api Caller Tool (Task 15.3)
 
 import pytest
 from unittest.mock import patch, Mock, MagicMock
-from api_caller import ApiCallerTool
+from tools.core.api_caller import ApiCallerTool
 
 def test_api_caller_url_validation():
     tool = ApiCallerTool()

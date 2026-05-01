@@ -7,9 +7,6 @@ import pytest
 from unittest.mock import Mock, MagicMock, patch
 
 # Mock observability module
-mock_logger = MagicMock()
-sys.modules['observability'] = MagicMock()
-sys.modules['observability'].get_logging_system = Mock(return_value=mock_logger)
 
 # We need to mock OpenAI and Qdrant before importing ObsidianTool since it initializes them
 with patch('knowledge.vector_db.QdrantClient'):

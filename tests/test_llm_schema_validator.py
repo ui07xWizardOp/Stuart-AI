@@ -9,13 +9,11 @@ import sys
 from pathlib import Path
 
 # Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import json
 
 # Import directly to avoid database dependencies
-sys.path.insert(0, str(Path(__file__).parent))
-from llm_schema_validator import (
+from core.llm_schema_validator import (
     LLMSchemaValidator,
     SchemaType,
     ValidationResult,

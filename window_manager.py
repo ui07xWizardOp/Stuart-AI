@@ -185,12 +185,12 @@ class WindowManager:
         
         # Correctly define SetWindowLongPtr and GetWindowLongPtr for 32/64-bit
         is_64bit = platform.architecture()[0] == '64bit'
-        if is_64bit:
+        if True:
             self.GetWindowLongPtr = self.user32.GetWindowLongPtrW
             self.SetWindowLongPtr = self.user32.SetWindowLongPtrW
         else:
-            self.GetWindowLongPtr = self.user32.GetWindowLongW
-            self.SetWindowLongPtr = self.user32.SetWindowLongW
+            self.GetWindowLongPtr = getattr(self.user32, 'GetWindowLongPtrW', self.user32.GetWindowLongW)
+            self.SetWindowLongPtr = getattr(self.user32, 'SetWindowLongPtrW', self.user32.SetWindowLongW)
 
         self.GetWindowLongPtr.restype = wintypes.LPARAM
         self.GetWindowLongPtr.argtypes = [wintypes.HWND, ctypes.c_int]
@@ -450,7 +450,7 @@ class WindowManager:
                     print(f"🔍 Found screen share indicator: '{title}' (Class: {class_name})")
                 
             except Exception as e:
-                # Continue enumeration even if one window fails
+                print(f"Exception caught in window iteration: {e}")
                 pass
             
             return True  # Continue enumeration
@@ -487,7 +487,8 @@ class WindowManager:
                 )
                 print(f"✅ Moved screen share indicator off-screen (HWND: {hex(hwnd)})")
                 return True
-            except:
+            except Exception as e:
+                print(f"Exception caught in window iteration: {e}")
                 pass
             
             # Method 3: Try to minimize the window
@@ -495,7 +496,8 @@ class WindowManager:
                 _user32.ShowWindow(hwnd, 6)  # SW_MINIMIZE
                 print(f"✅ Minimized screen share indicator (HWND: {hex(hwnd)})")
                 return True
-            except:
+            except Exception as e:
+                print(f"Exception caught in window iteration: {e}")
                 pass
                 
             print(f"❌ Failed to hide screen share indicator (HWND: {hex(hwnd)})")
@@ -961,29 +963,29 @@ class WindowManager:
 
         # Regular hotkeys using the proven GlobalHotKeys approach
         hotkey_map = {
-            '<alt>+x': on_toggle_ghost,
-            '<alt>+z': on_hide_show,
-            '<alt>+v': on_toggle_vision_mode,  # Toggle vision mode
-            '<alt>+s': on_capture_screenshot,  # Capture screenshot (replaces screen share hide)
-            '<alt>+p': on_process_screenshots, # Process screenshots
-            '<alt>+r': on_reset_screenshot_queue, # Reset screenshot queue
-            '<alt>+q': on_switch_primary,      # Switch to primary preset
-            '<alt>+w': on_switch_secondary,    # Switch to secondary preset
-            '<alt>+e': on_auto_select,         # Auto-select best AI preset
-            '<alt>+t': on_switch_vision_model,   # Switch vision model
-            '<alt>+m': on_toggle_mic_mute,     # Toggle microphone mute
-            '<alt>+u': on_toggle_universal_mute, # Toggle universal mute (pause)
-            '<alt>+1': on_transparency_transparent,  # 40% opacity (transparent)
-            '<alt>+2': on_transparency_semi,         # 70% opacity (semi-transparent)
-            '<alt>+3': on_transparency_opaque,       # 100% opacity (opaque)
-            '<alt>+<shift>+s': on_enable_proctoring_stealth,  # Enable proctoring stealth mode
-            '<alt>+<left>': on_move_left,      # Move window left
-            '<alt>+<right>': on_move_right,    # Move window right
-            '<alt>+i': on_move_up,             # Move window up (SWAPPED)
-            '<alt>+j': on_move_down,           # Move window down (SWAPPED)
-            '<alt>+o': on_reset_interview,     # Reset interview session
-            '<alt>+<up>': on_scroll_up_start,  # Start continuous scroll up (NEW)
-            '<alt>+<down>': on_scroll_down_start,  # Start continuous scroll down (NEW)
+            '<ctrl>+<alt>+x': on_toggle_ghost,
+            '<ctrl>+<alt>+z': on_hide_show,
+            '<ctrl>+<alt>+v': on_toggle_vision_mode,  # Toggle vision mode
+            '<ctrl>+<alt>+s': on_capture_screenshot,  # Capture screenshot (replaces screen share hide)
+            '<ctrl>+<alt>+p': on_process_screenshots, # Process screenshots
+            '<ctrl>+<alt>+r': on_reset_screenshot_queue, # Reset screenshot queue
+            '<ctrl>+<alt>+q': on_switch_primary,      # Switch to primary preset
+            '<ctrl>+<alt>+w': on_switch_secondary,    # Switch to secondary preset
+            '<ctrl>+<alt>+e': on_auto_select,         # Auto-select best AI preset
+            '<ctrl>+<alt>+t': on_switch_vision_model,   # Switch vision model
+            '<ctrl>+<alt>+m': on_toggle_mic_mute,     # Toggle microphone mute
+            '<ctrl>+<alt>+u': on_toggle_universal_mute, # Toggle universal mute (pause)
+            '<ctrl>+<alt>+1': on_transparency_transparent,  # 40% opacity (transparent)
+            '<ctrl>+<alt>+2': on_transparency_semi,         # 70% opacity (semi-transparent)
+            '<ctrl>+<alt>+3': on_transparency_opaque,       # 100% opacity (opaque)
+            '<ctrl>+<alt>+<shift>+s': on_enable_proctoring_stealth,  # Enable proctoring stealth mode
+            '<ctrl>+<alt>+<left>': on_move_left,      # Move window left
+            '<ctrl>+<alt>+<right>': on_move_right,    # Move window right
+            '<ctrl>+<alt>+i': on_move_up,             # Move window up (SWAPPED)
+            '<ctrl>+<alt>+j': on_move_down,           # Move window down (SWAPPED)
+            '<ctrl>+<alt>+o': on_reset_interview,     # Reset interview session
+            '<ctrl>+<alt>+<up>': on_scroll_up_start,  # Start continuous scroll up (NEW)
+            '<ctrl>+<alt>+<down>': on_scroll_down_start,  # Start continuous scroll down (NEW)
         }
         
         with keyboard.GlobalHotKeys(hotkey_map) as h:
@@ -1254,50 +1256,34 @@ def test_screen_share_detection():
     
     return indicators
 
+
 def apply_capture_protection(window):
-    """
-    Applies display affinity to exclude the window from screen capture.
-
-    This function is the heart of the "stealth" feature. It first tries to get
-    the window handle directly from a private pywebview attribute and, if that fails,
-    falls back to searching for the window by its title.
-
-    Args:
-        window: The pywebview window object.
-    """
     hwnd = None
     print("🛡️ APPLYING SCREEN CAPTURE PROTECTION...")
 
-    # --- Method 1: Get handle from pywebview's private attribute ---
-    # This is the preferred method as it's direct and not dependent on the window title.
-    # We use getattr for safety, in case this private attribute changes in future versions.
     hwnd = getattr(window, '_hwnd', None)
     print(f"🔍 Method 1 (window._hwnd): {hex(hwnd) if hwnd else 'Not found'}")
 
-    # --- Method 2: Fallback to finding the window by title ---
-    # If the private attribute doesn't exist, we use a classic Win32 function.
     if not hwnd:
-        print("⚠️ Private attribute not found, trying title search...")
-        # A small delay is crucial here. It gives the OS time to register the
-        # native window after the 'shown' event has fired.
-        time.sleep(0.2)
-        hwnd = _user32.FindWindowW(None, window.title)
-        print(f"🔍 Method 2 (FindWindowW with title '{window.title}'): {hex(hwnd) if hwnd else 'Not found'}")
+        import time
+        import ctypes
+        import os
 
-    # --- Method 3: Try multiple search attempts with delay ---
-    if not hwnd:
-        print("⚠️ Trying multiple search attempts...")
-        for attempt in range(5):
-            time.sleep(0.05)
-            hwnd = _user32.FindWindowW(None, "Stuart")
-            if hwnd:
-                print(f"🔍 Method 3 (attempt {attempt + 1}): Found {hex(hwnd)}")
-                break
+        print("⚠️ Private attribute not found, trying robust process-based title search...")
+
+        for attempt in range(25):
+            time.sleep(0.1)
+            temp_hwnd = _user32.FindWindowW(None, window.title)
+            if temp_hwnd:
+                pid = ctypes.c_ulong()
+                _user32.GetWindowThreadProcessId(temp_hwnd, ctypes.byref(pid))
+                if pid.value == os.getpid():
+                    hwnd = temp_hwnd
+                    print(f"🔍 Method 2 (Verified Title '{window.title}'): Found {hex(hwnd)}")
+                    break
         
-    # --- Apply the Protection ---
     if not hwnd:
         print("❌ CRITICAL: Could not obtain window handle! Screen capture protection NOT applied!")
-        print("   This means the window WILL be visible in screen recordings!")
         return False
 
     print(f"🛡️ Applying WDA_EXCLUDEFROMCAPTURE (0x{WDA_EXCLUDEFROMCAPTURE:08X}) to window {hex(hwnd)}...")
@@ -1305,23 +1291,14 @@ def apply_capture_protection(window):
 
     if success:
         print(f"✅ SUCCESS: Window {hex(hwnd)} is now HIDDEN from screen capture!")
-        print("   🎯 Window will appear as BLACK RECTANGLE in recordings/screen sharing")
-        
-        # Set window handle and hide from taskbar
         window_manager.set_window_handle(hwnd)
         window_manager.hide_from_taskbar()
-        
-        # Start screen share indicator monitoring
         window_manager.start_screen_share_monitor()
-        
-        # Verify the protection was applied
         verify_protection(hwnd)
         return True
     else:
-        # If the function fails, we get the last error code from the OS for debugging.
         error_code = ctypes.GetLastError()
         print(f"❌ FAILED: SetWindowDisplayAffinity failed! Error Code: {error_code}")
-        print("   🚨 WARNING: Window WILL be visible in screen recordings!")
         return False
 
 def verify_protection(hwnd):
