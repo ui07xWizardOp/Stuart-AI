@@ -7,7 +7,10 @@ them to OpenAI's native API to calculate High-Dimensional Dense Vectors.
 
 from typing import List, Dict, Any, Tuple
 import os
-import openai
+try:
+    import openai
+except ImportError:  # optional dependency for tests/runtime without embeddings
+    openai = None
 from pydantic_settings import BaseSettings
 
 from observability import get_logging_system

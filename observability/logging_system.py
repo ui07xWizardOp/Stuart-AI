@@ -514,18 +514,15 @@ def initialize_logging(
 
 
 def get_logging_system() -> LoggingSystem:
-    """
-    Get global logging system instance
-    
-    Returns:
-        LoggingSystem instance
-    
-    Raises:
-        RuntimeError: If logging system has not been initialized
+    """Get global logging system instance.
+
+    Lazily initializes a default logger when explicit initialization has not
+    been performed yet. This makes core subsystems safely instantiable in
+    tests and isolated utilities without strict bootstrap ordering.
     """
     global _logging_system
-    
+
     if _logging_system is None:
-        raise RuntimeError("Logging system has not been initialized. Call initialize_logging() first.")
-    
+        _logging_system = LoggingSystem()
+
     return _logging_system
