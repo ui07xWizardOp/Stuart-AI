@@ -99,7 +99,7 @@ except Exception as e:
             with os.fdopen(fd, 'w') as f:
                 f.write(code_str)
                 
-            wrapper_script = wrapper_script.replace("USER_CODE_PATH_PLACEHOLDER", temp_path.replace("\", "/"))
+            wrapper_script = wrapper_script.replace("USER_CODE_PATH_PLACEHOLDER", temp_path.replace("\\", "/"))
             
             w_fd, w_path = tempfile.mkstemp(suffix=".py")
             with os.fdopen(w_fd, 'w') as wf:
