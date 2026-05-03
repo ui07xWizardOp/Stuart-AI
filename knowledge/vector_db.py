@@ -9,7 +9,10 @@ from typing import List, Dict, Any, Optional
 import uuid
 import os
 from pathlib import Path
-from qdrant_client import QdrantClient
+try:
+    from qdrant_client import QdrantClient
+except ImportError:  # optional dependency
+    QdrantClient = None
 from qdrant_client.http.models import Distance, VectorParams, PointStruct
 
 from observability import get_logging_system

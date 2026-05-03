@@ -12,11 +12,16 @@ import uuid
 from typing import Dict, Any, Callable
 
 from observability import get_logging_system
+import logging
 
 class AutomationScheduler:
     
     def __init__(self, task_queue_push: Callable[[str], str]):
-        self.logger = get_logging_system()
+
+        try:
+            self.logger = get_logging_system()
+        except Exception:
+            self.logger = logging.getLogger(__name__)
         # Direct callback to TaskQueue.push_background_task
         self.execute_callback = task_queue_push
         

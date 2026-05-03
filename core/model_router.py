@@ -13,6 +13,7 @@ Phase 9A additions:
 from enum import Enum
 from typing import Dict, Any, List, Optional, Callable
 from observability import get_logging_system
+import logging
 from core.llm_clients import OllamaClient, OpenAIClient
 from core.circuit_breaker import CircuitBreaker, CircuitOpenError
 from core.token_quota import TokenQuota, QuotaExceededError
@@ -21,6 +22,18 @@ class ModelTier(str, Enum):
     FAST_CHEAP = "fast_cheap"     
     BALANCED = "balanced"         
     REASONING = "reasoning"
+
+
+from dataclasses import dataclass
+
+@dataclass
+class ModelEndpoint:
+    provider: str
+    model: str
+    tier: ModelTier
+    max_tokens: int
+    temperature: float = 0.0
+    top_p: float = 1.0
 
 class ModelRouter:
     """
@@ -37,16 +50,30 @@ class ModelRouter:
 
     def __init__(
         self,
+        endpoints: Optional[List[ModelEndpoint]] = None,
         token_quota: Optional[TokenQuota] = None,
         ollama_breaker_threshold: int = 3,
         cloud_breaker_threshold: int = 2,
         recovery_timeout: float = 60.0,
     ):
-        self.logger = get_logging_system()
         
-        # Instantiate physical clients
-        self.local_client = OllamaClient()
-        self.cloud_client = OpenAIClient()
+        try:
+            self.logger = get_logging_system()
+        except Exception:
+            self.logger = logging.getLogger(__name__)
+
+        self.endpoints = endpoints or []
+        self.circuit_breakers: Dict[str, CircuitBreaker] = {}
+        for ep in self.endpoints:
+            self.circuit_breakers[f"{ep.provider}:{ep.model}"] = CircuitBreaker(name=f"{ep.provider}:{ep.model}")
+
+        # Instantiate physical clients only for modern chat-routing mode
+        if self.endpoints:
+            self.local_client = None
+            self.cloud_client = None
+        else:
+            self.local_client = OllamaClient()
+            self.cloud_client = OpenAIClient()
         
         # Circuit breakers — one per provider
         self.ollama_breaker = CircuitBreaker(
@@ -61,12 +88,40 @@ class ModelRouter:
         )
         
         # Token budget manager (shared instance, injected from main.py)
-        self.quota = token_quota or TokenQuota()
+        if self.endpoints:
+            self.quota = token_quota
+        else:
+            self.quota = token_quota or TokenQuota()
         
         self.logger.info(
             "🛡️ Hardened Dual-LLM Dispatcher initialized. "
             "(Local: Ollama [CB:3], Cloud: OpenAI [CB:2], Quota: active)"
         )
+
+    def select_model(self, tier: ModelTier, fallback_allowed: bool = True) -> Optional[ModelEndpoint]:
+        if not self.endpoints:
+            return None
+        exact = [ep for ep in self.endpoints if ep.tier == tier]
+        if exact:
+            return exact[0]
+        if fallback_allowed:
+            return self.endpoints[0]
+        return None
+
+    def execute_with_failover_legacy(self, call_fn: Callable[[ModelEndpoint], Any], tier: ModelTier) -> Any:
+        candidates = [ep for ep in self.endpoints if ep.tier == tier] or list(self.endpoints)
+        last_error = None
+        for ep in candidates:
+            key = f"{ep.provider}:{ep.model}"
+            breaker = self.circuit_breakers[key]
+            try:
+                res = breaker.call(call_fn, ep)
+                return res
+            except Exception as e:
+                last_error = e
+        if last_error:
+            raise last_error
+        raise RuntimeError("No endpoints available")
 
     def evaluate_prompt_complexity(self, messages: List[Dict[str, str]]) -> ModelTier:
         """
@@ -92,7 +147,7 @@ class ModelRouter:
         """Rough token count for quota pre-flight checks."""
         return sum(len(m.get("content", "")) for m in messages) // 4
 
-    def execute_with_failover(self, messages: List[Dict[str, str]], force_tier: Optional[ModelTier] = None) -> str:
+    def execute_with_failover(self, messages, force_tier: Optional[ModelTier] = None):
         """
         Executes the prompt array with circuit breaker + quota protection.
         
@@ -106,6 +161,10 @@ class ModelRouter:
            b. Try Cloud through its circuit breaker
            c. Record actual token usage
         """
+        if callable(messages):
+            # legacy signature: execute_with_failover(call_fn, tier)
+            return self.execute_with_failover_legacy(messages, force_tier or ModelTier.FAST_CHEAP)
+
         target_tier = force_tier if force_tier else self.evaluate_prompt_complexity(messages)
         estimated_tokens = self._estimate_tokens(messages)
         
