@@ -23,7 +23,6 @@ class SpanContext:
     trace_id: str
     span_id: str
     parent_span_id: Optional[str] = None
-    
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
     
@@ -43,6 +42,16 @@ class Span:
     status: str = SpanStatus.SUCCESS.value
     tags: Dict[str, Any] = field(default_factory=dict)
     logs: List[Dict[str, Any]] = field(default_factory=list)
+
+    # Compatibility helpers for OpenTelemetry-like usage
+    def set_attribute(self, key: str, value: Any) -> None:
+        self.tags[key] = value
+
+    def add_event(self, name: str, attributes: Optional[Dict[str, Any]] = None) -> None:
+        event = {'timestamp': datetime.utcnow().isoformat() + 'Z', 'event': name}
+        if attributes:
+            event.update(attributes)
+        self.logs.append(event)
     
     def to_dict(self) -> Dict[str, Any]:
         data = asdict(self)
@@ -125,7 +134,7 @@ class TracingSystem:
         span = self._spans.get(span_id)
         return SpanContext(span.trace_id, span.span_id, span.parent_span_id) if span else None
     
-    def query_spans(self, trace_id=None, operation_name=None, status=None, limit=100):
+    def query_spans(self, trace_id=None, operation_name=None, status=None, tags=None, limit=100):
         spans = list(self._spans.values())
         if trace_id:
             spans = [s for s in spans if s.trace_id == trace_id]
@@ -133,6 +142,8 @@ class TracingSystem:
             spans = [s for s in spans if s.operation_name == operation_name]
         if status:
             spans = [s for s in spans if s.status == status]
+        if tags:
+            spans = [s for s in spans if all(s.tags.get(k)==v for k,v in tags.items())]
         spans.sort(key=lambda s: s.start_time, reverse=True)
         return spans[:limit]
     
@@ -146,7 +157,10 @@ class TracingSystem:
     def get_tracing_stats(self):
         total = len(self._spans)
         finished = sum(1 for s in self._spans.values() if s.is_finished())
-        return {'enabled': self.enable_tracing, 'total_spans': total, 'finished_spans': finished, 'active_spans': total - finished, 'total_traces': len(self._trace_spans)}
+        status_counts = {}
+        for span in self._spans.values():
+            status_counts[span.status] = status_counts.get(span.status, 0) + 1
+        return {'enabled': self.enable_tracing, 'total_spans': total, 'finished_spans': finished, 'active_spans': total - finished, 'total_traces': len(self._trace_spans), 'status_counts': status_counts}
     
     def clear_traces(self, trace_ids=None):
         if trace_ids is None:
@@ -197,6 +211,7 @@ def initialize_tracing(enable_tracing=True, sample_rate=1.0, max_spans_in_memory
     return _tracing_system
 
 def get_tracing_system():
+    global _tracing_system
     if _tracing_system is None:
-        raise RuntimeError('Tracing system not initialized')
+        _tracing_system = TracingSystem()
     return _tracing_system

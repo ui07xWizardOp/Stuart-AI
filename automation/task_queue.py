@@ -11,11 +11,16 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 
 from observability import get_logging_system
+import logging
 
 class TaskQueue:
     
-    def __init__(self, orchestrator_factory: Callable[[], Any] = None, max_workers: int = 2):
-        self.logger = get_logging_system()
+    def __init__(self, orchestrator_factory: Callable[[], Any], max_workers: int = 2):
+        
+        try:
+            self.logger = get_logging_system()
+        except Exception:
+            self.logger = logging.getLogger(__name__)
         # Pass a factory so children threads can instantiate fresh un-corrupted ReAct loops
         self.orchestrator_factory = orchestrator_factory
         
@@ -30,9 +35,6 @@ class TaskQueue:
         self.logger.info(f"Worker {job_id} picked up task: '{prompt[:30]}...'")
         
         try:
-            if not self.orchestrator_factory:
-                raise RuntimeError("TaskQueue.orchestrator_factory is not set. Cannot process background tasks.")
-            
             # Boot a fresh agent instance for this thread
             thread_agent = self.orchestrator_factory()
             

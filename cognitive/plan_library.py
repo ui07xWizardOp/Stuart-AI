@@ -18,6 +18,7 @@ import os
 from datetime import datetime
 
 from observability import get_logging_system
+import logging
 from memory.memory_system import MemorySystem
 
 
@@ -26,7 +27,11 @@ class PlanLibrary:
     PLANS_DIR = os.path.join("data", "plans")
 
     def __init__(self, memory_system: MemorySystem):
-        self.logger = get_logging_system()
+        
+        try:
+            self.logger = get_logging_system()
+        except Exception:
+            self.logger = logging.getLogger(__name__)
         self.memory = memory_system
         
         # In-memory cache for fast lookups

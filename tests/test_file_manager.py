@@ -5,7 +5,7 @@ Tests for FileManagerTool (Task 15.1)
 import os
 from pathlib import Path
 import pytest
-from file_manager import FileManagerTool
+from tools.core.file_manager import FileManagerTool
 
 
 def test_file_manager_happy_path(tmp_path):

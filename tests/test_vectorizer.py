@@ -7,11 +7,8 @@ import pytest
 from unittest.mock import Mock, MagicMock, patch
 
 # Mock observability module
-mock_logger = MagicMock()
-sys.modules['observability'] = MagicMock()
-sys.modules['observability'].get_logging_system = Mock(return_value=mock_logger)
 
-from vectorizer import Vectorizer, TextChunk
+from knowledge.vectorizer import Vectorizer, TextChunk
 
 def test_vectorizer_chunking():
     # Force tiny chunks for test (5 words, overlap 2)

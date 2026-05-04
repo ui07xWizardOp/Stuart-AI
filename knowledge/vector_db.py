@@ -9,7 +9,10 @@ from typing import List, Dict, Any, Optional
 import uuid
 import os
 from pathlib import Path
-from qdrant_client import QdrantClient
+try:
+    from qdrant_client import QdrantClient
+except ImportError:  # optional dependency
+    QdrantClient = None
 from qdrant_client.http.models import Distance, VectorParams, PointStruct
 
 from observability import get_logging_system
@@ -94,14 +97,14 @@ class VectorDatabase:
         if not query_vector:
             return []
             
-        search_result = self.client.search(
+        search_result = self.client.query_points(
             collection_name=self.collection_name,
-            query_vector=query_vector,
+            query=query_vector,
             limit=limit
         )
         
         results = []
-        for hit in search_result:
+        for hit in search_result.points:
             results.append({
                 "score": hit.score,
                 "text": hit.payload.get("text", ""),

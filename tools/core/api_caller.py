@@ -67,10 +67,61 @@ class ApiCallerTool(BaseTool):
             elif isinstance(body, str):
                 data = body.encode("utf-8")
 
+        import urllib.parse
+        import urllib.request
+        import urllib.error
+        import ipaddress
+        import socket
+
         req = urllib.request.Request(url, data=data, headers=headers, method=method)
 
+        parsed_url = urllib.parse.urlparse(url)
+        if parsed_url.scheme not in ('http', 'https'):
+            return ToolResult(success=False, error=f"Invalid URL scheme: {parsed_url.scheme}. Only http/https are allowed.")
+
+        # Block localhost and internal IPs to prevent SSRF
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as response:
+            # Resolve hostname to IP to prevent DNS rebinding or obfuscation
+            ip = socket.gethostbyname(parsed_url.hostname)
+            ip_obj = ipaddress.ip_address(ip)
+            if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip == "169.254.169.254":
+                return ToolResult(success=False, error="Local and internal networks are restricted.")
+
+            # Reconstruct the URL using the resolved IP to prevent TOCTOU DNS rebinding
+            netloc = ip
+            if parsed_url.port:
+                netloc = f"{ip}:{parsed_url.port}"
+
+            safe_url = urllib.parse.urlunparse((
+                parsed_url.scheme,
+                netloc,
+                parsed_url.path,
+                parsed_url.params,
+                parsed_url.query,
+                parsed_url.fragment
+            ))
+
+
+            # Pass the original host in headers to ensure virtual hosting routing works
+            req_kwargs = {"url": safe_url}
+            if hasattr(req, 'data'): req_kwargs['data'] = req.data
+            if hasattr(req, 'method'): req_kwargs['method'] = req.method
+            safe_req = urllib.request.Request(**req_kwargs)
+
+            safe_req.add_header("Host", parsed_url.hostname)
+
+            # Copy other headers
+            for k, v in getattr(req, 'headers', {}).items():
+                if k.lower() != "host":
+                    safe_req.add_header(k, v)
+
+        except Exception as e:
+            return ToolResult(success=False, error=f"DNS resolution or safety check failed: {e}")
+
+        try:
+            with urllib.request.urlopen(safe_req, timeout=timeout) as response:
+
+
                 status_code = response.getcode()
                 response_bytes = response.read(1024 * 1024) # Cap read at 1MB to prevent blast
                 try:

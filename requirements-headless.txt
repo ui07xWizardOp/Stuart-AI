@@ -37,3 +37,4 @@ python-telegram-bot
 
 # ── Testing ─────────────────────────────────────────────
 pytest
+SQLAlchemy

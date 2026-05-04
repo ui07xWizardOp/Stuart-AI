@@ -7,11 +7,8 @@ from unittest.mock import Mock, MagicMock
 import time
 
 # Mock observability module
-mock_logger = MagicMock()
-sys.modules['observability'] = MagicMock()
-sys.modules['observability'].get_logging_system = Mock(return_value=mock_logger)
 
-from task_queue import TaskQueue
+from automation.task_queue import TaskQueue
 
 def test_task_queue_execution():
     mock_orchestrator = MagicMock()

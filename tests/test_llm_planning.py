@@ -14,7 +14,7 @@ import json
 from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime
 
-from hybrid_planner import (
+from cognitive.hybrid_planner import (
     HybridPlanner,
     TaskComplexity,
     ComplexityClassification,

@@ -56,30 +56,70 @@ class PythonExecutorTool(BaseTool):
         if not code_str.strip():
             return ToolResult(success=False, error="Code parameter is empty.", output=None)
 
-        # Setup restricted globals namespace
-        restricted_globals = {
-            "__builtins__": {
-                **builtins.__dict__,
-                "__import__": self._safe_import,
-                "open": None, # Disable file opening via generic open
-                "eval": None,
-                "exec": None,
-            }
-        }
+        import subprocess
+        import tempfile
+        import os
+
+        wrapper_script = f"""
+import sys
+
+def fake_import(name, *args, **kwargs):
+    raise ImportError(f"Security restriction: module '{{name}}' is forbidden in this sandbox.")
+
+def fake_open(*args, **kwargs):
+    raise TypeError("'NoneType' object is not callable")
+
+isolated_builtins = __builtins__.copy() if isinstance(__builtins__, dict) else __builtins__.__dict__.copy()
+isolated_builtins["__import__"] = fake_import
+isolated_builtins["open"] = fake_open
+isolated_builtins["eval"] = None
+isolated_builtins["exec"] = None
+
+isolated_globals = {{"__builtins__": isolated_builtins}}
+
+with open("USER_CODE_PATH_PLACEHOLDER", "r") as src:
+    user_code = src.read()
+
+try:
+    compiled_code = compile(user_code, "<string>", "exec")
+    exec(compiled_code, isolated_globals, {{}})
+except Exception as e:
+    import traceback
+    traceback.print_exc(file=sys.stderr)
+    sys.exit(1)
+"""
         
-        # Setup buffer to capture generic print statements
-        stdout_buffer = io.StringIO()
-        
+        fd, temp_path = tempfile.mkstemp(suffix=".py")
         try:
-            with contextlib.redirect_stdout(stdout_buffer):
-                # Execute inside the restricted globals boundary
-                exec(code_str, restricted_globals, {})
-                output_str = stdout_buffer.getvalue()
+            with os.fdopen(fd, 'w') as f:
+                f.write(code_str)
                 
-            return ToolResult(success=True, output=output_str)
+            wrapper_script = wrapper_script.replace("USER_CODE_PATH_PLACEHOLDER", temp_path.replace("\\", "/"))
             
-        except ImportError as e:
-            return ToolResult(success=False, error=str(e), output=None)
+            w_fd, w_path = tempfile.mkstemp(suffix=".py")
+            with os.fdopen(w_fd, 'w') as wf:
+                wf.write(wrapper_script)
+
+            result = subprocess.run(
+                ["python", w_path],
+                capture_output=True,
+                text=True,
+                timeout=10.0
+            )
+
+            if result.returncode == 0:
+                return ToolResult(success=True, output=result.stdout)
+            else:
+                return ToolResult(success=False, error=result.stderr, output=result.stdout)
+
+        except subprocess.TimeoutExpired:
+            return ToolResult(success=False, error="Execution timed out after 10 seconds.", output=None)
         except Exception as e:
-            error_trace = f"{type(e).__name__}: {str(e)}\n\nStandard Output up to crash:\n{stdout_buffer.getvalue()}"
-            return ToolResult(success=False, error=error_trace, output=None)
+            return ToolResult(success=False, error=str(e), output=None)
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            try:
+                os.remove(w_path)
+            except:
+                pass

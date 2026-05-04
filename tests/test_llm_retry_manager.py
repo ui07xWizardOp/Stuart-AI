@@ -10,7 +10,7 @@ import time
 from unittest.mock import Mock, patch
 from datetime import datetime
 
-from llm_retry_manager import (
+from core.llm_retry_manager import (
     LLMRetryManager,
     RetryConfig,
     RetryStrategy,

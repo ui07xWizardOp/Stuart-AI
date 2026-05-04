@@ -3,7 +3,7 @@ Tests for PythonExecutorTool (Task 15.2)
 """
 
 import pytest
-from python_executor import PythonExecutorTool
+from tools.core.python_executor import PythonExecutorTool
 
 def test_python_executor_success():
     tool = PythonExecutorTool()

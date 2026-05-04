@@ -55,15 +55,26 @@ class MCPClient:
         """Starts the MCP server process and initializes the connection."""
         self.logger.info(f"Starting MCP Server '{self.server_name}' with command: {self.command}")
         
-        # Use subprocess to run the command, attaching to stdin/stdout
+
+        import shlex
+        safe_command = self.command
+        if isinstance(self.command, str):
+            safe_command = shlex.split(self.command)
+
+        import shlex
+        safe_command = self.command
+        if isinstance(self.command, str):
+            safe_command = shlex.split(self.command)
+
         self.process = subprocess.Popen(
-            self.command,
+            safe_command,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
             bufsize=1
         )
+
         
         # Start a thread to read stderr and log it (useful for debugging server crashes)
         threading.Thread(target=self._read_stderr, daemon=True).start()

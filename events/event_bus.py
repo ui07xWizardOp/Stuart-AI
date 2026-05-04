@@ -529,18 +529,8 @@ def initialize_event_bus(
 
 
 def get_event_bus() -> EventBus:
-    """
-    Get global event bus instance
-    
-    Returns:
-        EventBus instance
-    
-    Raises:
-        RuntimeError: If event bus has not been initialized
-    """
+    """Get global event bus instance with lazy initialization."""
     global _event_bus
-    
     if _event_bus is None:
-        raise RuntimeError("Event bus has not been initialized. Call initialize_event_bus() first.")
-    
+        _event_bus = EventBus()
     return _event_bus
