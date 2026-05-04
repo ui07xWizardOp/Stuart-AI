@@ -61,6 +61,23 @@ class EventType(str, Enum):
     
     # Configuration events
     CONFIG_HOT_RELOADED = "config_hot_reloaded"
+    
+    # Batch execution events (Feature #6)
+    BATCH_STARTED = "batch_started"
+    BATCH_COMPLETED = "batch_completed"
+    BATCH_TASK_COMPLETED = "batch_task_completed"
+    
+    # Delegation / supervisor events (Feature #7)
+    DELEGATION_STARTED = "delegation_started"
+    DELEGATION_COMPLETED = "delegation_completed"
+    
+    # Skill evolution events (Feature #9)
+    SKILL_EVOLVED = "skill_evolved"
+    SKILL_PROMOTED = "skill_promoted"
+    
+    # Verification events (Feature #10)
+    VERIFICATION_PASSED = "verification_passed"
+    VERIFICATION_FAILED = "verification_failed"
 
 
 @dataclass

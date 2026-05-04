@@ -99,6 +99,11 @@ class SlashCommandRouter:
             "/telos": (self._cmd_telos, "View or update the core cognitive alignment: /telos [update <text>]"),
             "/skills": (self._cmd_skills, "Manage community skills: /skills [list|install|remove] <name>"),
             "/traces": (self._cmd_traces, "Show recent trace/span statistics: /traces [stats|recent]"),
+            "/batch": (self._cmd_batch, "Run batch tasks: /batch [parallel|sequential|pipeline] task1 | task2 | ..."),
+            "/delegate": (self._cmd_delegate, "Delegate a complex goal to supervisor-worker agents: /delegate <goal>"),
+            "/agent": (self._cmd_agent, "Manage agent personas: /agent [list|run <name> <task>]"),
+            "/evolve": (self._cmd_evolve, "Skill evolution: /evolve [status|scan|promote <id>|list]"),
+            "/verify": (self._cmd_verify, "Toggle verifiable iteration: /verify [on|off|status]"),
             "/help": (self._cmd_help, "Show this help message"),
         }
         for name, (handler, desc) in builtins.items():
@@ -454,3 +459,155 @@ class SlashCommandRouter:
             
         except Exception as e:
             return f"? Search failed: {e}"
+
+    # ?? Feature #6-10 Command Handlers ???????????????????????????????
+
+    def _cmd_batch(self, args: str) -> str:
+        """Run batch tasks: /batch [parallel|sequential|pipeline] task1 | task2 | ..."""
+        batch_runner = self._context.get("batch_runner")
+        if not batch_runner:
+            return "?? BatchRunner is not initialized."
+
+        if not args or args.strip().lower() == "list":
+            batches = batch_runner.list_batches()
+            if not batches:
+                return "No batch history found."
+            lines = ["? **Batch History:**\n"]
+            for b in batches[:10]:
+                lines.append(f"  `{b['batch_id']}` | {b['mode']} | {b['tasks']} tasks | {b['created_at']}")
+            return "\n".join(lines)
+
+        # Parse mode and tasks
+        from core.batch_runner import BatchMode
+        parts = args.strip().split(maxsplit=1)
+        mode = BatchMode.PARALLEL
+        task_str = args
+
+        if parts[0].lower() in ("parallel", "sequential", "pipeline"):
+            mode = BatchMode(parts[0].lower())
+            task_str = parts[1] if len(parts) > 1 else ""
+
+        tasks = [t.strip() for t in task_str.split("|") if t.strip()]
+        if not tasks:
+            return "?? Usage: `/batch [parallel|sequential|pipeline] task1 | task2 | ...`"
+
+        manifest = batch_runner.run_batch(tasks, mode=mode)
+        return batch_runner.generate_report(manifest)
+
+    def _cmd_delegate(self, args: str) -> str:
+        """Delegate a complex goal to supervisor-worker agents."""
+        supervisor = self._context.get("supervisor")
+        if not supervisor:
+            return "?? SupervisorAgent is not initialized."
+
+        if not args.strip():
+            return "?? Usage: `/delegate <complex goal description>`"
+
+        result = supervisor.delegate(args.strip())
+        lines = [
+            f"## ?? Delegation Report `{result.delegation_id}`\n",
+            f"**Goal:** {result.goal[:100]}",
+            f"**Sub-tasks:** {len(result.sub_task_results)}",
+            f"**Duration:** {result.total_duration_ms:.0f}ms",
+            f"**Status:** {'? Success' if result.success else '? Partial'}\n",
+            "---",
+            result.synthesized_output,
+        ]
+        return "\n".join(lines)
+
+    def _cmd_agent(self, args: str) -> str:
+        """Manage agent personas: /agent [list|run <name> <task>]."""
+        agent_factory = self._context.get("agent_factory")
+        agent_registry = self._context.get("agent_registry")
+        if not agent_registry:
+            return "?? AgentRegistry is not initialized."
+
+        parts = args.strip().split(maxsplit=2)
+        subcmd = parts[0].lower() if parts else "list"
+
+        if subcmd == "list" or not args.strip():
+            agents = agent_registry.list_agents()
+            if not agents:
+                return "No agents registered."
+            lines = ["? **Available Agent Personas:**\n"]
+            for a in agents:
+                builtin = "?" if a['builtin'] else "?"
+                lines.append(
+                    f"  {builtin} `{a['name']}` | {a['role']} | "
+                    f"tools={a['tools']} | steps={a['max_steps']} | tier={a['tier']}"
+                )
+            return "\n".join(lines)
+
+        elif subcmd == "run":
+            if len(parts) < 3:
+                return "?? Usage: `/agent run <name> <task>`"
+            name = parts[1]
+            task = parts[2]
+            if not agent_factory:
+                return "?? AgentFactory is not initialized."
+            response = agent_factory.run_agent(name, task)
+            return f"## ?? Agent `{name}` Response\n\n{response}"
+
+        return "?? Usage: `/agent [list|run <name> <task>]`"
+
+    def _cmd_evolve(self, args: str) -> str:
+        """Skill evolution: /evolve [status|scan|promote <id>|list]."""
+        evolver = self._context.get("skill_evolver")
+        if not evolver:
+            return "?? SkillEvolver is not initialized."
+
+        parts = args.strip().split(maxsplit=1)
+        subcmd = parts[0].lower() if parts else "status"
+
+        if subcmd == "status" or not args.strip():
+            return evolver.get_status()
+
+        elif subcmd == "scan":
+            new_skills = evolver.scan_and_evolve()
+            if not new_skills:
+                return "? No new skills evolved. Need more proven plans (threshold: " + str(evolver.evolution_threshold) + " executions)."
+            lines = [f"? **Evolved {len(new_skills)} new skills:**\n"]
+            for s in new_skills:
+                lines.append(f"  `{s.skill_id}` ? {s.source_intent[:50]}... (conf={s.confidence:.2f})")
+            return "\n".join(lines)
+
+        elif subcmd == "promote":
+            if len(parts) < 2:
+                return "?? Usage: `/evolve promote <skill_id>`"
+            return evolver.promote_skill(parts[1].strip())
+
+        elif subcmd == "force-promote":
+            if len(parts) < 2:
+                return "?? Usage: `/evolve force-promote <skill_id>`"
+            return evolver.force_promote(parts[1].strip())
+
+        elif subcmd == "list":
+            skills = evolver.list_skills()
+            if not skills:
+                return "No evolved skills yet."
+            lines = ["? **Evolved Skills:**\n"]
+            for s in skills:
+                lines.append(
+                    f"  {s['promoted']} `{s['skill_id']}` | {s['source_intent']} | "
+                    f"conf={s['confidence']} | runs={s['executions']}"
+                )
+            return "\n".join(lines)
+
+        return "?? Usage: `/evolve [status|scan|promote <id>|list]`"
+
+    def _cmd_verify(self, args: str) -> str:
+        """Toggle verifiable iteration: /verify [on|off|status]."""
+        verifier = self._context.get("verifier")
+        if not verifier:
+            return "?? VerifiableIterator is not initialized."
+
+        subcmd = args.strip().lower() if args.strip() else "status"
+
+        if subcmd == "on":
+            return verifier.toggle(True)
+        elif subcmd == "off":
+            return verifier.toggle(False)
+        elif subcmd == "status":
+            return verifier.get_status()
+
+        return "?? Usage: `/verify [on|off|status]`"
