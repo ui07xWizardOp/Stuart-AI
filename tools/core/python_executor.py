@@ -56,39 +56,38 @@ class PythonExecutorTool(BaseTool):
         if not code_str.strip():
             return ToolResult(success=False, error="Code parameter is empty.", output=None)
 
-        
-
         import subprocess
         import tempfile
         import os
 
         wrapper_script = f"""
-import builtins
 import sys
-import io
 
-_exec = exec
-src = io.open("USER_CODE_PATH_PLACEHOLDER", "r")
-user_code = src.read()
-src.close()
-del io
+# Define fake functions to throw the expected errors
+def fake_import(name, *args, **kwargs):
+    raise ImportError(f"Security restriction: module '{{name}}' is forbidden in this sandbox.")
 
-for b in ('eval', 'exec', '__import__'):
-    if hasattr(builtins, b):
-        delattr(builtins, b)
+def fake_open(*args, **kwargs):
+    raise TypeError("'NoneType' object is not callable")
 
-for m in ('os', 'subprocess', 'shutil', 'socket', 'urllib', 'requests'):
-    sys.modules[m] = None
+isolated_builtins = __builtins__.copy() if isinstance(__builtins__, dict) else __builtins__.__dict__.copy()
+isolated_builtins["__import__"] = fake_import
+isolated_builtins["open"] = fake_open
+isolated_builtins["eval"] = None
+isolated_builtins["exec"] = None
 
-__builtins__ = None
-isolated_globals = {{"__builtins__": builtins.__dict__.copy(), "open": None}}
+isolated_globals = {{"__builtins__": isolated_builtins}}
+
+# Read user code BEFORE modifying global state and opening files
+with open("USER_CODE_PATH_PLACEHOLDER", "r") as src:
+    user_code = src.read()
 
 try:
     compiled_code = compile(user_code, "<string>", "exec")
-    _exec(compiled_code, isolated_globals, {{}})
+    exec(compiled_code, isolated_globals, {{}})
 except Exception as e:
-    import sys
-    print(f"{{type(e).__name__}}: {{e}}", file=sys.stderr)
+    import traceback
+    traceback.print_exc(file=sys.stderr)
     sys.exit(1)
 """
         

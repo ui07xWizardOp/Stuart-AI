@@ -13,7 +13,7 @@ def test_api_caller_url_validation():
     assert res.success is False
     assert "must begin with http" in res.error
 
-@patch('api_caller.urllib.request.urlopen')
+@patch('tools.core.api_caller.urllib.request.urlopen')
 def test_api_caller_success(mock_urlopen):
     # Mocking standard HTTP response
     mock_response = MagicMock()

@@ -327,467 +327,55 @@ class WindowManager:
         """Make window fully opaque"""
         return self.set_transparency(1.0)
     
-    def find_window_by_title(self, title: str) -> Optional[int]:
-        """Find window handle by title"""
+    def find_window_by_title(self, title: str) -> bool:
+        """Find a window by its exact title and current process ID."""
         if not self.is_windows:
+            return False
+
+        try:
+            import ctypes
+            from ctypes import wintypes
+            import os
+            
+            # Use EnumWindows to find all windows, then filter by title and PID
+            # This is more robust than FindWindowW which might return a window from another process
+            found_hwnd = None
+            my_pid = os.getpid()
+            
+            def enum_windows_proc(hwnd, lParam):
+                nonlocal found_hwnd
+                
+                # Check window title
+                length = self.user32.GetWindowTextLengthW(hwnd)
+                if length > 0:
+                    buff = ctypes.create_unicode_buffer(length + 1)
+                    self.user32.GetWindowTextW(hwnd, buff, length + 1)
+
+                    if buff.value == title:
+                        # Found a window with the right title, now check the PID
+                        pid = ctypes.c_ulong()
+                        self.user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+
+                        if pid.value == my_pid:
+                            found_hwnd = hwnd
+                            return False # Stop enumerating
+
+                return True
+
+            EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, ctypes.POINTER(ctypes.c_int))
+            self.user32.EnumWindows(EnumWindowsProc(enum_windows_proc), 0)
+            
+            if found_hwnd:
+                self.hwnd = found_hwnd
+                self.title = title
+                print(f"🎯 Found window '{title}' (PID: {my_pid}, HWND: {hex(found_hwnd)})")
+                return found_hwnd
+                
             return None
-            
-        try:
-            FindWindowW = self.user32.FindWindowW
-            FindWindowW.argtypes = [wintypes.LPCWSTR, wintypes.LPCWSTR]
-            FindWindowW.restype = wintypes.HWND
-            
-            hwnd = FindWindowW(None, title)
-            if hwnd:
-                self.set_window_handle(hwnd)
-                return hwnd
-            return None
+
         except Exception as e:
-            print(f"Error finding window: {e}")
-            return None
-
-    def find_screen_share_indicators(self) -> list:
-        """Find all screen sharing indicator windows"""
-        if not self.is_windows:
-            return []
-        
-        found_windows = []
-        
-        def enum_windows_callback(hwnd, lparam):
-            try:
-                # Get window title
-                title_buffer = ctypes.create_unicode_buffer(512)
-                title_length = self.GetWindowTextW(hwnd, title_buffer, 512)
-                title = title_buffer.value if title_length > 0 else ""
-                
-                # Get window class name
-                class_buffer = ctypes.create_unicode_buffer(256)
-                class_length = self.GetClassNameW(hwnd, class_buffer, 256)
-                class_name = class_buffer.value if class_length > 0 else ""
-                
-                # Check if this looks like a screen sharing indicator
-                is_indicator = False
-                
-                # Check title for screen sharing keywords
-                title_lower = title.lower()
-                for indicator_text in SCREEN_SHARE_INDICATORS:
-                    if indicator_text.lower() in title_lower:
-                        is_indicator = True
-                        break
-                
-                # Check class name for known screen sharing/recording classes
-                if not is_indicator:
-                    screen_share_classes = [
-                        # Browser notifications
-                        "Chrome_WidgetWin_1",  # Chrome screen share notification
-                        "MozillaDialogClass",  # Firefox screen share notification
-                        "EdgeWebView2",        # Edge screen share notification
-                        "OperaWindowClass",    # Opera browser
-                        "BraveWindowClass",    # Brave browser
-                        
-                        # Windows system notifications
-                        "NotificationPresenterHost",  # Windows notification
-                        "Windows.UI.Core.CoreWindow",  # Windows 10/11 notifications
-                        "ApplicationFrameHost",        # Windows 10/11 app frame
-                        "Shell_TrayWnd",              # System tray notifications
-                        
-                        # Video conferencing
-                        "ZPContentViewWndClass",      # Zoom
-                        "ZPFloatToolbarClass",        # Zoom toolbar
-                        "TeamsWebView",               # Microsoft Teams
-                        "SkypeWindowClass",           # Skype
-                        "DiscordWindowClass",         # Discord
-                        "SlackWindowClass",           # Slack
-                        
-                        # Screen recording software
-                        "Qt5QWindowIcon",             # OBS Studio
-                        "OBSWindowClass",             # OBS
-                        "CamtasiaStudioWindowClass",  # Camtasia
-                        "BandicamWindowClass",        # Bandicam
-                        "XSplitWindowClass",          # XSplit
-                        "StreamlabsWindowClass",      # Streamlabs
-                        "FrapsWindowClass",           # Fraps
-                        "ActionWindowClass",          # Mirillis Action!
-                        
-                        # Remote desktop tools
-                        "TeamViewer_DesktopWindowClass",  # TeamViewer
-                        "AnyDeskWindowClass",             # AnyDesk
-                        "VNCWindowClass",                 # VNC viewers
-                        "LogMeInWindowClass",             # LogMeIn
-                        "SplashtopWindowClass",           # Splashtop
-                        "ParsecWindowClass",              # Parsec
-                        
-                        # System recording indicators
-                        "GameBarDisplayCaptureIndicator", # Xbox Game Bar
-                        "NvidiaGeForceExperience",        # Nvidia ShadowPlay
-                        "AMDReliveWindowClass",           # AMD ReLive
-                        
-                        # Generic Windows classes
-                        "NotifyIconOverflowWindow",       # System tray overflow
-                        "ToolbarWindow32",                # Toolbar notifications
-                        "Static",                         # Static text windows
-                        "Button"                          # Button controls
-                    ]
-                    
-                    for share_class in screen_share_classes:
-                        if share_class.lower() in class_name.lower():
-                            # Additional verification for these classes
-                            verification_keywords = [
-                                "sharing", "screen", "record", "capture", "desktop", 
-                                "monitor", "display", "streaming", "broadcast", "meeting",
-                                "presentation", "remote", "control", "access"
-                            ]
-                            if any(keyword in title_lower for keyword in verification_keywords):
-                                is_indicator = True
-                                break
-                
-                if is_indicator and _user32.IsWindowVisible(hwnd):
-                    found_windows.append({
-                        'hwnd': hwnd,
-                        'title': title,
-                        'class': class_name
-                    })
-                    print(f"🔍 Found screen share indicator: '{title}' (Class: {class_name})")
-                
-            except Exception as e:
-                print(f"Exception caught in window iteration: {e}")
-                pass
-            
-            return True  # Continue enumeration
-        
-        try:
-            callback_type = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
-            callback = callback_type(enum_windows_callback)
-            self.EnumWindows(callback, 0)
-        except Exception as e:
-            print(f"❌ Error enumerating windows: {e}")
-        
-        return found_windows
-
-    def hide_screen_share_indicator(self, hwnd: int) -> bool:
-        """Hide a specific screen sharing indicator window"""
-        if not self.is_windows:
-            return False
-        
-        try:
-            # Method 1: Try to hide the window completely
-            result = _user32.ShowWindow(hwnd, SW_HIDE)
-            if result:
-                print(f"✅ Hidden screen share indicator (HWND: {hex(hwnd)})")
-                self.hidden_screen_share_windows.add(hwnd)
-                return True
-            
-            # Method 2: Try to move it off-screen if hiding failed
-            try:
-                self.SetWindowPos(
-                    hwnd, 0, 
-                    -10000, -10000,  # Move far off-screen
-                    0, 0,  # Don't change size
-                    self.SWP_NOSIZE
-                )
-                print(f"✅ Moved screen share indicator off-screen (HWND: {hex(hwnd)})")
-                return True
-            except Exception as e:
-                print(f"Exception caught in window iteration: {e}")
-                pass
-            
-            # Method 3: Try to minimize the window
-            try:
-                _user32.ShowWindow(hwnd, 6)  # SW_MINIMIZE
-                print(f"✅ Minimized screen share indicator (HWND: {hex(hwnd)})")
-                return True
-            except Exception as e:
-                print(f"Exception caught in window iteration: {e}")
-                pass
-                
-            print(f"❌ Failed to hide screen share indicator (HWND: {hex(hwnd)})")
-            return False
-            
-        except Exception as e:
-            print(f"❌ Error hiding screen share indicator: {e}")
-            return False
-
-    def hide_all_screen_share_indicators(self) -> int:
-        """Find and hide all screen sharing indicators"""
-        if not self.is_windows:
-            return 0
-        
-        indicators = self.find_screen_share_indicators()
-        hidden_count = 0
-        
-        for indicator in indicators:
-            hwnd = indicator['hwnd']
-            if hwnd not in self.hidden_screen_share_windows:
-                if self.hide_screen_share_indicator(hwnd):
-                    hidden_count += 1
-        
-        if hidden_count > 0:
-            print(f"🕵️ Successfully hidden {hidden_count} screen sharing indicator(s)")
-        
-        return hidden_count
-
-    def start_screen_share_monitor(self):
-        """Start monitoring for screen sharing indicators and auto-hide them"""
-        if not self.is_windows or self.screen_share_monitor_active:
-            return
-        
-        print("🔍 Starting screen sharing indicator monitor...")
-        self.screen_share_monitor_active = True
-        
-        def monitor_thread():
-            while self.screen_share_monitor_active:
-                try:
-                    self.hide_all_screen_share_indicators()
-                    time.sleep(1.0)  # Check every second
-                except Exception as e:
-                    print(f"❌ Error in screen share monitor: {e}")
-                    time.sleep(2.0)  # Wait longer on error
-        
-        monitor = Thread(target=monitor_thread, daemon=True)
-        monitor.start()
-        print("✅ Screen sharing indicator monitor started")
-
-    def stop_screen_share_monitor(self):
-        """Stop monitoring for screen sharing indicators"""
-        if self.screen_share_monitor_active:
-            self.screen_share_monitor_active = False
-            print("🛑 Screen sharing indicator monitor stopped")
-    
-    def set_always_on_top(self, on_top: bool) -> bool:
-        """
-        Set window to always stay on top
-        Args:
-            on_top: True to set always on top, False to remove
-        Returns:
-            bool: True if successful, False otherwise
-        """
-        if not self.is_windows or not self.hwnd:
-            print("Always on top not supported on this platform or no window handle")
-            return False
-            
-        try:
-            # Add debugging
-            print(f"🔧 Attempting to set always on top: {on_top}, HWND: {self.hwnd}")
-            
-            hwnd_insert_after = self.HWND_TOPMOST if on_top else self.HWND_NOTOPMOST
-            
-            # Call SetWindowPos with proper error handling
-            result = self.SetWindowPos(
-                self.hwnd,
-                hwnd_insert_after,
-                0, 0, 0, 0,  # x, y, width, height (ignored due to flags)
-                self.SWP_NOMOVE | self.SWP_NOSIZE  # Don't move or resize
-            )
-            
-            if result:
-                status = "on top" if on_top else "normal"
-                print(f"✅ Window set to {status}")
-                return True
-            else:
-                # Get the last error code for debugging
-                error_code = ctypes.windll.kernel32.GetLastError()
-                print(f"❌ SetWindowPos failed (Error {error_code}), trying alternative method...")
-                
-                # Try alternative method using window style
-                return self._set_always_on_top_alternative(on_top)
-                
-        except Exception as e:
-            print(f"❌ Error setting always on top: {e}")
-            return False
-
-    def _set_always_on_top_alternative(self, on_top: bool) -> bool:
-        """
-        Alternative method to set always on top using window extended styles
-        """
-        try:
-            # Get current extended window style
-            ex_style = self.GetWindowLongPtr(self.hwnd, self.GWL_EXSTYLE)
-            
-            if on_top:
-                # Add topmost style
-                new_style = ex_style | self.WS_EX_TOPMOST
-            else:
-                # Remove topmost style
-                new_style = ex_style & ~self.WS_EX_TOPMOST
-            
-            # Set the new style
-            result = self.SetWindowLongPtr(self.hwnd, self.GWL_EXSTYLE, new_style)
-            
-            if result or ex_style != new_style:
-                # Force window update
-                self.user32.SetWindowPos(
-                    self.hwnd, 0, 0, 0, 0, 0,
-                    self.SWP_NOMOVE | self.SWP_NOSIZE | 0x0020  # SWP_FRAMECHANGED
-                )
-                status = "on top" if on_top else "normal"
-                print(f"✅ Window set to {status} (alternative method)")
-                return True
-            else:
-                print("❌ Alternative method also failed")
-                return False
-                
-        except Exception as e:
-            print(f"❌ Error in alternative always-on-top method: {e}")
-            return False
-
-    def get_window_info(self) -> dict:
-        """Get current window transparency info"""
-        return {
-            "transparency": self.current_transparency,
-            "transparency_percent": int(self.current_transparency * 100),
-            "is_transparent": self.current_transparency < 1.0,
-            "platform_supported": self.is_windows,
-            "window_handle": self.hwnd,
-            "screen_share_monitor_active": self.screen_share_monitor_active,
-            "hidden_screen_share_windows": len(self.hidden_screen_share_windows)
-        }
-
-    def set_ghost_mode(self, enabled: bool):
-        """Enable or disable 'click-through' (ghost) mode."""
-        if not self.is_windows or not self.hwnd:
-            return
-
-        try:
-            current_style = self.GetWindowLongPtr(self.hwnd, self.GWL_EXSTYLE)
-            if enabled:
-                new_style = current_style | self.WS_EX_TRANSPARENT
-                print("👻 Ghost Mode Enabled (click-through)")
-            else:
-                new_style = current_style & ~self.WS_EX_TRANSPARENT
-                print("🖱️ Ghost Mode Disabled (normal interaction)")
-
-            self.SetWindowLongPtr(self.hwnd, self.GWL_EXSTYLE, new_style)
-            self.is_ghost_mode = enabled
-            
-            # Force re-apply always-on-top after style change
-            self.set_always_on_top(True)
-            
-        except Exception as e:
-            print(f"❌ Error setting ghost mode: {e}")
-
-    def toggle_ghost_mode(self):
-        """Toggles the ghost mode on or off."""
-        self.set_ghost_mode(not self.is_ghost_mode)
-
-    def enable_proctoring_stealth_mode(self):
-        """
-        Enable complete stealth mode for proctoring environments.
-        
-        This mode combines multiple stealth features:
-        - Ghost mode (click-through) to prevent accidental focus
-        - Screen capture protection
-        - Always on top but without focus
-        - Hidden from taskbar
-        
-        Use global hotkeys (Alt+Z, Alt+X, etc.) to interact safely.
-        """
-        if not self.is_windows or not self.hwnd:
-            print("❌ Proctoring stealth mode requires Windows and valid window handle")
-            return False
-        
-        try:
-            print("🎯 Enabling PROCTORING STEALTH MODE...")
-            
-            # 1. Enable ghost mode (click-through)
-            self.set_ghost_mode(True)
-            
-            # 2. Hide from taskbar
-            self.hide_from_taskbar()
-            
-            # 3. Set always on top but without focus
-            self.set_always_on_top(True)
-            
-            # 4. Make semi-transparent for visibility without being obvious
-            self.set_transparency(0.7)
-            
-            print("✅ PROCTORING STEALTH MODE ENABLED")
-            print("   🚨 IMPORTANT: Use ONLY global hotkeys to interact:")
-            print("   📌 Alt+Z: Toggle visibility (no focus change)")
-            print("   📌 Alt+X: Toggle ghost mode")
-            print("   📌 Alt+1/2/3: Adjust transparency")
-            print("   📌 DO NOT click on the window - it will trigger focus detection!")
-            
-            return True
-            
-        except Exception as e:
-            print(f"❌ Error enabling proctoring stealth mode: {e}")
-            return False
-
-    def move_window(self, dx: int, dy: int) -> bool:
-        """
-        Move window by specified offset without changing focus (stealth movement).
-        
-        Args:
-            dx: Horizontal offset in pixels (positive = right, negative = left)
-            dy: Vertical offset in pixels (positive = down, negative = up)
-        
-        Returns:
-            bool: True if successful, False otherwise
-        """
-        if not self.is_windows or not self.hwnd:
-            print("❌ Window movement requires Windows and valid window handle")
-            return False
-        
-        try:
-            # Get current window position
-            rect = self.RECT()
-            if not self.GetWindowRect(self.hwnd, ctypes.byref(rect)):
-                print("❌ Failed to get current window position")
-                return False
-            
-            # Calculate new position
-            new_x = rect.left + dx
-            new_y = rect.top + dy
-            
-            # Move window without activating it
-            result = self.SetWindowPos(
-                self.hwnd,
-                0,  # hwndInsertAfter (ignored due to SWP_NOZORDER)
-                new_x, new_y,  # new position
-                0, 0,  # width, height (ignored due to SWP_NOSIZE)
-                self.SWP_NOSIZE | self.SWP_NOACTIVATE | self.SWP_NOZORDER
-            )
-            
-            if result:
-                direction = ""
-                if dx > 0:
-                    direction += f"right {dx}px "
-                elif dx < 0:
-                    direction += f"left {abs(dx)}px "
-                if dy > 0:
-                    direction += f"down {dy}px"
-                elif dy < 0:
-                    direction += f"up {abs(dy)}px"
-                
-                print(f"🎯 Window moved {direction.strip()} (stealth - no focus change)")
-                return True
-            else:
-                print("❌ Failed to move window")
-                return False
-                
-        except Exception as e:
-            print(f"❌ Error moving window: {e}")
-            return False
-
-
-    def toggle_visibility(self):
-        """Toggle the window's visibility without changing focus (stealth mode)."""
-        if not self.is_windows or not self.hwnd:
-            print("Window visibility control not supported or no window handle.")
-            return
-
-        if _user32.IsWindowVisible(self.hwnd):
-            _user32.ShowWindow(self.hwnd, SW_HIDE)
-            print("🕵️‍ Window hidden via global hotkey.")
-        else:
-            # Use SW_SHOWNOACTIVATE to show window without giving it focus
-            # This prevents proctoring software from detecting focus changes
-            _user32.ShowWindow(self.hwnd, SW_SHOWNOACTIVATE)
-            print("✨ Window shown via global hotkey (stealth - no focus change).")
-            # Re-apply always-on-top state when showing the window
-            self.set_always_on_top(True)
-
-    def hide_from_taskbar(self) -> bool:
+            print(f"❌ Error finding window '{title}': {e}")
+            return None    def hide_from_taskbar(self) -> bool:
         """Hide the window from the taskbar by setting WS_EX_TOOLWINDOW."""
         if not self.is_windows or not self.hwnd:
             print("Cannot hide from taskbar: Not on Windows or no window handle")

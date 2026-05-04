@@ -23,8 +23,8 @@ def test_python_executor_banned_modules():
     res = tool.execute("execute_python", {"code": code})
     
     assert res.success is False
-    assert "Security restriction" in res.error or "ImportError" in res.error
-    # assert "forbidden" in res.error
+    assert "Security restriction" in res.error
+    assert "forbidden" in res.error
 
 def test_python_executor_banned_builtins():
     tool = PythonExecutorTool()
