@@ -448,11 +448,10 @@ export class ProviderManager {
 
         const allChecks = [...requiredChecks, ...visibleOptionalChecks];
 
-        // Check if all systems are green
+        // Check if all systems are green (using data-status attributes)
         const allSystemsGo = allChecks.every(check => {
             if (!check) return false;
-            const indicator = check.querySelector('.indicator');
-            return indicator && indicator.textContent === '🟢';
+            return check.getAttribute('data-status') === 'pass';
         });
 
         // Enable/disable start button
@@ -467,8 +466,7 @@ export class ProviderManager {
                 // Log which checks are failing for debugging
                 const failingChecks = allChecks.filter(check => {
                     if (!check) return true;
-                    const indicator = check.querySelector('.indicator');
-                    return !indicator || indicator.textContent !== '🟢';
+                    return check.getAttribute('data-status') !== 'pass';
                 }).map(check => check ? check.id : 'null');
                 devLog(`❌ Systems not ready. Failing checks: ${failingChecks.join(', ')}`);
             }

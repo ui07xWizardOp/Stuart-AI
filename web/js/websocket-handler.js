@@ -337,17 +337,34 @@ export class WebSocketHandler {
             devLog(`[updateCheckStatus] Warning: Attempted to update a null checkElement.`);
             return;
         }
-        const indicator = checkElement.querySelector('.indicator');
+
+        // Map status strings to data-attribute values
+        const statusMap = { 'success': 'pass', 'error': 'fail', 'pending': 'running' };
+        const dataStatus = statusMap[status] || 'pending';
+        checkElement.setAttribute('data-status', dataStatus);
+
         const textNode = Array.from(checkElement.childNodes).find(node =>
             node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== ''
         );
-        if (indicator) {
-            indicator.textContent = status === 'success' ? '🟢' : status === 'error' ? '🔴' : '⚪';
-        }
         if (textNode) {
             textNode.nodeValue = ` ${text}`;
         }
+
+        // Update progress bar
+        this.updatePreflightProgress();
+
         devLog(`[UI UPDATE] Set ${checkElement.id} to ${status}: ${text}`);
+    }
+
+    updatePreflightProgress() {
+        const allChecks = document.querySelectorAll('#checks .check-item:not([style*="display: none"])');
+        const passedChecks = document.querySelectorAll('#checks .check-item[data-status="pass"]:not([style*="display: none"])');
+        const progressFill = document.getElementById('preflight-progress-fill');
+        
+        if (progressFill && allChecks.length > 0) {
+            const percent = Math.round((passedChecks.length / allChecks.length) * 100);
+            progressFill.style.width = `${percent}%`;
+        }
     }
 
     checkAllSystemsGo() {

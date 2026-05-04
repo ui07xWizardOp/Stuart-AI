@@ -44,6 +44,13 @@
     --accent-secondary: var(--indigo-primary);
     --accent-glow: rgba(0, 247, 255, 0.12);
 
+    /* === SEMANTIC ACCENT ALIASES (previously undefined) === */
+    --accent-success: var(--success-green);
+    --accent-warning: var(--warning-orange);
+    --accent-error: var(--error-red);
+    --accent-indigo-light: #818cf8;
+    --subtle-purple: #a78bfa;
+
     /* === SPACING & RADIUS === */
     --space-xs: 4px;
     --space-sm: 8px;
@@ -59,7 +66,7 @@
     /* === TYPOGRAPHY === */
     --font-display: 'Space Grotesk', -apple-system, sans-serif;
     --font-body: 'Inter', sans-serif;
-    --font-mono: 'Space Mono', 'JetBrains Mono', monospace;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
     --font-xs: 0.75rem;   /* 12px */
     --font-sm: 0.875rem;  /* 14px */
     --font-base: 1rem;    /* 16px */
@@ -74,6 +81,12 @@
     --transition-fast: 0.1s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-base: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     --ease-premium: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* === MOTION DESIGN SYSTEM === */
+    --motion-enter: 0.3s cubic-bezier(0.2, 0, 0, 1);
+    --motion-exit: 0.2s cubic-bezier(0.4, 0, 1, 1);
+    --motion-emphasis: 0.5s cubic-bezier(0.2, 0, 0, 1);
+    --motion-spring: 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* ===== BASE ===== */
@@ -910,6 +923,94 @@ button.loading::after {
 }
 
 /* ===== PREFLIGHT CHECK SYSTEM ===== */
+
+/* Progress Bar */
+.preflight-progress-bar {
+    width: 100%;
+    height: 4px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-pill);
+    margin-bottom: var(--space-lg);
+    overflow: hidden;
+}
+
+.preflight-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--electric-cyan), var(--success-green));
+    border-radius: var(--radius-pill);
+    transition: width 0.5s var(--ease-premium);
+}
+
+/* SVG Check Indicators */
+.check-svg {
+    display: block;
+}
+
+.check-ring {
+    transition: all 0.3s var(--ease-premium);
+}
+
+/* Check States via data-attribute */
+.check-item[data-status="running"] .check-ring {
+    stroke: var(--electric-cyan);
+    opacity: 1;
+    animation: check-spin 1s linear infinite;
+    stroke-dasharray: 31.4;
+    stroke-dashoffset: 15;
+}
+
+.check-item[data-status="pass"] .check-svg {
+    color: var(--success-green);
+}
+
+.check-item[data-status="pass"] .check-ring {
+    opacity: 0;
+}
+
+.check-item[data-status="pass"] .indicator::after {
+    content: "✓";
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--success-green);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: check-pop var(--motion-spring) forwards;
+}
+
+.check-item[data-status="fail"] .check-svg {
+    color: var(--error-red);
+}
+
+.check-item[data-status="fail"] .check-ring {
+    stroke: var(--error-red);
+    opacity: 1;
+}
+
+.check-item[data-status="fail"] .indicator::after {
+    content: "✕";
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--error-red);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+@keyframes check-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes check-pop {
+    0% { transform: translate(-50%, -50%) scale(0); }
+    60% { transform: translate(-50%, -50%) scale(1.3); }
+    100% { transform: translate(-50%, -50%) scale(1); }
+}
+
 #checks {
     background: var(--bg-primary);
     border: 1px solid var(--border-color);
@@ -946,6 +1047,10 @@ button.loading::after {
     font-size: var(--font-lg);
     min-width: var(--space-xl);
     text-align: center;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #mic-select {

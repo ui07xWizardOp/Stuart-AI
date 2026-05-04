@@ -1,9 +1,13 @@
 /**
- * Agent Chat Module (Phase 8)
+ * Agent Chat Module (Phase 8 — Upgraded)
  * 
  * Handles the PCA Agent chat view — sending messages to /api/agent/chat,
- * rendering responses, managing autonomy toggles, and status polling.
+ * rendering responses with full streaming markdown + Prism.js syntax highlighting,
+ * managing autonomy toggles, and status polling.
  */
+
+import { StreamingMarkdownParser } from './streaming-markdown-parser.js';
+import toast from './toast.js';
 
 class AgentChat {
     constructor() {
@@ -112,6 +116,7 @@ class AgentChat {
 
             if (!res.ok) {
                 this.appendMessage('agent', `⚠️ Error: ${data.detail || 'Unknown error'}`, null);
+                toast.error('Agent Error', data.detail || 'Unknown error');
             } else {
                 this.appendMessage('agent', data.response, data.elapsed_ms);
             }
@@ -160,37 +165,27 @@ class AgentChat {
 
     renderMarkdown(text) {
         if (!text) return '';
-        let html = text;
 
-        // Code blocks (```lang\n...\n```)
-        html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
-            const escaped = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            return `<pre><code class="language-${lang || 'text'}">${escaped}</code></pre>`;
-        });
-
-        // Inline code
-        html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-        // Bold
-        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
-        // Italic
-        html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-
-        // Headers
-        html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-        html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
-        html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
-
-        // Unordered lists
-        html = html.replace(/^[\-\*] (.+)$/gm, '<li>$1</li>');
-        html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
-
-        // Line breaks (double newline = paragraph break)
-        html = html.replace(/\n\n/g, '<br><br>');
-        html = html.replace(/\n/g, '<br>');
-
-        return html;
+        // Use the full streaming markdown parser for rich rendering
+        try {
+            const parser = new StreamingMarkdownParser();
+            parser.processChunk(text);
+            const html = parser.finalize();
+            return html;
+        } catch (err) {
+            console.warn('Agent markdown rendering fallback:', err);
+            // Fallback: basic safe rendering
+            let html = text;
+            html = html.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+                return `<pre><code class="language-${lang || 'text'}">${code}</code></pre>`;
+            });
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            html = html.replace(/\n/g, '<br>');
+            return html;
+        }
     }
 
     setTyping(show) {

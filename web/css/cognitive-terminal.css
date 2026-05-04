@@ -36,8 +36,23 @@
 .span-8 { grid-column: span 8; }
 .span-12 { grid-column: span 12; }
 
-@media (max-width: 1024px) {
-    .span-8, .span-4 { grid-column: span 12; }
+/* Tablet: 2-column stacking */
+@media (max-width: 1024px) and (min-width: 601px) {
+    .bento-grid {
+        grid-template-columns: repeat(6, 1fr);
+    }
+    .span-8 { grid-column: span 6; }
+    .span-4 { grid-column: span 3; }
+}
+
+/* Mobile: Full-width stacking */
+@media (max-width: 600px) {
+    .bento-grid {
+        grid-template-columns: 1fr;
+        grid-gap: var(--space-sm);
+        padding: var(--space-sm);
+    }
+    .span-8, .span-4, .span-12 { grid-column: span 1; }
 }
 
 /* --- Cell Headers --- */

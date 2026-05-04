@@ -1,5 +1,6 @@
 import { devLog, devWarn } from './config.js';
 import screenshotService from './screenshot-service.js';
+import toast from './toast.js';
 
 export class StateManager {
     constructor() {
@@ -96,7 +97,7 @@ export class StateManager {
         for (const [id, name] of Object.entries(requiredFields)) {
             const element = document.getElementById(id);
             if (!element || !element.value) {
-                alert(`${name} is a required field.`);
+                toast.warning('Required Field', `${name} is required.`);
                 allValid = false;
                 break;
             }
@@ -104,7 +105,7 @@ export class StateManager {
 
         const focusCheckboxes = Array.from(this.onboardingForm.focusCheckboxes || []).filter(cb => cb.checked);
         if (focusCheckboxes.length === 0) {
-            alert('Please select at least one Interview Focus.');
+            toast.warning('Interview Focus', 'Please select at least one focus area.');
             allValid = false;
         }
 
@@ -115,7 +116,7 @@ export class StateManager {
         const secondaryModel = this.onboardingForm.secondaryModelSelect?.value || '';
         
         if ((secondaryProvider && !secondaryModel) || (!secondaryProvider && secondaryModel)) {
-            alert('If you select a secondary provider, you must also select a secondary model (or leave both empty).');
+            toast.warning('Incomplete Config', 'If you select a secondary provider, you must also select a secondary model (or leave both empty).');
             return false;
         }
 
@@ -124,7 +125,7 @@ export class StateManager {
             const primaryModel = this.onboardingForm.modelSelect?.value || '';
             
             if (primaryProvider === secondaryProvider && primaryModel === secondaryModel) {
-                alert('Primary and secondary AI models cannot be the same. Please select different models.');
+                toast.warning('Duplicate Models', 'Primary and secondary AI models cannot be the same.');
                 return false;
             }
         }
@@ -134,7 +135,7 @@ export class StateManager {
         const visionModel = this.onboardingForm.visionModelSelect?.value || '';
         
         if ((visionProvider && !visionModel) || (!visionProvider && visionModel)) {
-            alert('If you select a vision provider, you must also select a vision model (or leave both empty).');
+            toast.warning('Incomplete Config', 'If you select a vision provider, you must also select a vision model (or leave both empty).');
             return false;
         }
 
@@ -142,7 +143,7 @@ export class StateManager {
         const secondaryVisionModel = this.onboardingForm.visionSecondaryModelSelect?.value || '';
         
         if ((secondaryVisionProvider && !secondaryVisionModel) || (!secondaryVisionProvider && secondaryVisionModel)) {
-            alert('If you select a secondary vision provider, you must also select a secondary vision model (or leave both empty).');
+            toast.warning('Incomplete Config', 'If you select a secondary vision provider, you must also select a secondary vision model (or leave both empty).');
             return false;
         }
 
@@ -197,7 +198,7 @@ export class StateManager {
             if (window.presetManager) {
                 presetManager.showErrorNotification('Start the interview first before using vision mode');
             } else {
-                alert('Please start the interview before using vision mode');
+                toast.info('Vision Mode', 'Start the interview first before using vision mode');
             }
             return false;
         }
@@ -207,7 +208,7 @@ export class StateManager {
             if (window.presetManager) {
                 presetManager.showErrorNotification('Vision model not configured. Please set up a vision provider in onboarding.');
             } else {
-                alert('Vision model not configured. Please configure a vision provider in onboarding.');
+                toast.warning('No Vision Model', 'Vision model not configured. Please set one up in onboarding.');
             }
             return false;
         }
@@ -312,7 +313,7 @@ export class StateManager {
             if (window.presetManager) {
                 presetManager.showErrorNotification('Start the interview first before taking screenshots');
             } else {
-                alert('Please start the interview before taking screenshots');
+                toast.info('Screenshots', 'Start the interview first before taking screenshots');
             }
             return false;
         }
@@ -322,7 +323,7 @@ export class StateManager {
             if (window.presetManager) {
                 presetManager.showErrorNotification('Enter vision mode first (Alt+V) before taking screenshots');
             } else {
-                alert('Enter vision mode first (Alt+V) before taking screenshots');
+                toast.info('Vision Mode Required', 'Enter vision mode first (Alt+V) before taking screenshots');
             }
             return false;
         }
@@ -339,7 +340,7 @@ export class StateManager {
             if (window.presetManager) {
                 presetManager.showErrorNotification('Start the interview first before processing screenshots');
             } else {
-                alert('Please start the interview before processing screenshots');
+                toast.info('Screenshots', 'Start the interview first before processing screenshots');
             }
             return false;
         }
@@ -349,7 +350,7 @@ export class StateManager {
             if (window.presetManager) {
                 presetManager.showErrorNotification('Enter vision mode first (Alt+V) before processing screenshots');
             } else {
-                alert('Enter vision mode first (Alt+V) before processing screenshots');
+                toast.info('Vision Mode Required', 'Enter vision mode first (Alt+V) before processing screenshots');
             }
             return false;
         }
@@ -366,7 +367,7 @@ export class StateManager {
             if (window.presetManager) {
                 presetManager.showErrorNotification('Start the interview first before resetting screenshot queue');
             } else {
-                alert('Please start the interview before resetting screenshot queue');
+                toast.info('Screenshots', 'Start the interview first before resetting screenshot queue');
             }
             return false;
         }
@@ -376,7 +377,7 @@ export class StateManager {
             if (window.presetManager) {
                 presetManager.showErrorNotification('Enter vision mode first (Alt+V) before resetting screenshot queue');
             } else {
-                alert('Enter vision mode first (Alt+V) before resetting screenshot queue');
+                toast.info('Vision Mode Required', 'Enter vision mode first (Alt+V) before resetting screenshot queue');
             }
             return false;
         }
@@ -395,7 +396,7 @@ export class StateManager {
             if (window.presetManager) {
                 presetManager.showErrorNotification('Start the interview first before using microphone controls');
             } else {
-                alert('Please start the interview before using microphone controls');
+                toast.info('Microphone', 'Start the interview first before using microphone controls');
             }
             return false;
         }
@@ -431,7 +432,7 @@ export class StateManager {
             if (window.presetManager) {
                 presetManager.showErrorNotification('Start the interview first before using audio controls');
             } else {
-                alert('Please start the interview before using audio controls');
+                toast.info('Audio Controls', 'Start the interview first before using audio controls');
             }
             return false;
         }
