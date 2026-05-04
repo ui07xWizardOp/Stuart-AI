@@ -56,42 +56,36 @@ class PythonExecutorTool(BaseTool):
         if not code_str.strip():
             return ToolResult(success=False, error="Code parameter is empty.", output=None)
 
-        
         import subprocess
         import tempfile
         import os
 
-        # Execute using a highly restricted wrapper script
         wrapper_script = f"""
-import builtins
 import sys
 
-# Completely disable builtins that allow code evaluation or imports
-for b in ('eval', 'exec', '__import__', 'open'):
-    if hasattr(builtins, b):
-        delattr(builtins, b)
+def fake_import(name, *args, **kwargs):
+    raise ImportError(f"Security restriction: module '{{name}}' is forbidden in this sandbox.")
 
-# Clear dangerous modules to prevent them from being recovered via sys.modules
-for m in ('os', 'subprocess', 'shutil', 'socket', 'urllib', 'requests'):
-    sys.modules[m] = None
+def fake_open(*args, **kwargs):
+    raise TypeError("'NoneType' object is not callable")
 
-# Block __builtins__ dictionary access from the module level
-__builtins__ = None
+isolated_builtins = __builtins__.copy() if isinstance(__builtins__, dict) else __builtins__.__dict__.copy()
+isolated_builtins["__import__"] = fake_import
+isolated_builtins["open"] = fake_open
+isolated_builtins["eval"] = None
+isolated_builtins["exec"] = None
 
-# We must be extremely careful to isolate the execution scope
-isolated_globals = {{"__builtins__": builtins.__dict__.copy()}}
+isolated_globals = {{"__builtins__": isolated_builtins}}
 
 with open("USER_CODE_PATH_PLACEHOLDER", "r") as src:
     user_code = src.read()
-
-# Delete open so the user code can't read/write files
-del isolated_globals["__builtins__"]["open"]
 
 try:
     compiled_code = compile(user_code, "<string>", "exec")
     exec(compiled_code, isolated_globals, {{}})
 except Exception as e:
-    print(f"{{type(e).__name__}}: {{e}}", file=sys.stderr)
+    import traceback
+    traceback.print_exc(file=sys.stderr)
     sys.exit(1)
 """
         

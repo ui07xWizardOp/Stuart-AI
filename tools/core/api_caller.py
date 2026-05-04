@@ -67,14 +67,13 @@ class ApiCallerTool(BaseTool):
             elif isinstance(body, str):
                 data = body.encode("utf-8")
 
-        req = urllib.request.Request(url, data=data, headers=headers, method=method)
-
-
-
         import urllib.parse
         import urllib.request
+        import urllib.error
         import ipaddress
         import socket
+
+        req = urllib.request.Request(url, data=data, headers=headers, method=method)
 
         parsed_url = urllib.parse.urlparse(url)
         if parsed_url.scheme not in ('http', 'https'):
