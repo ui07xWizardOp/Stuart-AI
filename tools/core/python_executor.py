@@ -57,40 +57,37 @@ class PythonExecutorTool(BaseTool):
             return ToolResult(success=False, error="Code parameter is empty.", output=None)
 
         
+
         import subprocess
         import tempfile
         import os
 
-        # Execute using a highly restricted wrapper script
         wrapper_script = f"""
 import builtins
 import sys
+import io
 
-# Completely disable builtins that allow code evaluation or imports
-for b in ('eval', 'exec', '__import__', 'open'):
+_exec = exec
+src = io.open("USER_CODE_PATH_PLACEHOLDER", "r")
+user_code = src.read()
+src.close()
+del io
+
+for b in ('eval', 'exec', '__import__'):
     if hasattr(builtins, b):
         delattr(builtins, b)
 
-# Clear dangerous modules to prevent them from being recovered via sys.modules
 for m in ('os', 'subprocess', 'shutil', 'socket', 'urllib', 'requests'):
     sys.modules[m] = None
 
-# Block __builtins__ dictionary access from the module level
 __builtins__ = None
-
-# We must be extremely careful to isolate the execution scope
-isolated_globals = {{"__builtins__": builtins.__dict__.copy()}}
-
-with open("USER_CODE_PATH_PLACEHOLDER", "r") as src:
-    user_code = src.read()
-
-# Delete open so the user code can't read/write files
-del isolated_globals["__builtins__"]["open"]
+isolated_globals = {{"__builtins__": builtins.__dict__.copy(), "open": None}}
 
 try:
     compiled_code = compile(user_code, "<string>", "exec")
-    exec(compiled_code, isolated_globals, {{}})
+    _exec(compiled_code, isolated_globals, {{}})
 except Exception as e:
+    import sys
     print(f"{{type(e).__name__}}: {{e}}", file=sys.stderr)
     sys.exit(1)
 """
