@@ -27,7 +27,7 @@ class PlanLibrary:
     PLANS_DIR = os.path.join("data", "plans")
 
     def __init__(self, memory_system: MemorySystem):
-
+        
         try:
             self.logger = get_logging_system()
         except Exception:

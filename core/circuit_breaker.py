@@ -49,7 +49,7 @@ class CircuitBreaker:
         self._last_failure_time: Optional[float] = None
         self._half_open_calls = 0
         self._lock = threading.Lock()
-
+        
         try:
             self.logger = get_logging_system()
         except Exception:

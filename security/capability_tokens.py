@@ -57,7 +57,7 @@ class CapabilityTokenSystem:
     """
     
     def __init__(self, default_ttl_sec: float = 300.0):
-
+        
         try:
             self.logger = get_logging_system()
         except Exception:

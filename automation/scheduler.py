@@ -17,7 +17,7 @@ import logging
 class AutomationScheduler:
     
     def __init__(self, task_queue_push: Callable[[str], str]):
-
+        
         try:
             self.logger = get_logging_system()
         except Exception:

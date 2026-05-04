@@ -61,7 +61,7 @@ class ModelRouter:
             self.logger = get_logging_system()
         except Exception:
             self.logger = logging.getLogger(__name__)
-
+        
         self.endpoints = endpoints or []
         self.circuit_breakers: Dict[str, CircuitBreaker] = {}
         for ep in self.endpoints:
