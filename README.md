@@ -133,7 +133,7 @@ Stuart's Stealth Mode is engineered to provide powerful AI assistance while rema
 | ✨ **Focus-Free Control** | Show, hide, move, scroll — all via global hotkeys without ever clicking on Stuart |
 | 🚀 **Silent Launch** | `silent_run.vbs` starts Stuart with zero visible terminal windows |
 
-> 📖 **Full stealth guide:** [PROCTORING_STEALTH_GUIDE.md](PROCTORING_STEALTH_GUIDE.md)
+> 📖 **Full stealth guide:** [PROCTORING_STEALTH_GUIDE.md](docs/PROCTORING_STEALTH_GUIDE.md)
 
 ---
 
