@@ -61,6 +61,11 @@ class MCPClient:
         if isinstance(self.command, str):
             safe_command = shlex.split(self.command)
 
+        import shlex
+        safe_command = self.command
+        if isinstance(self.command, str):
+            safe_command = shlex.split(self.command)
+
         self.process = subprocess.Popen(
             safe_command,
             stdin=subprocess.PIPE,

@@ -63,7 +63,6 @@ class PythonExecutorTool(BaseTool):
         wrapper_script = f"""
 import sys
 
-# Define fake functions to throw the expected errors
 def fake_import(name, *args, **kwargs):
     raise ImportError(f"Security restriction: module '{{name}}' is forbidden in this sandbox.")
 
@@ -78,7 +77,6 @@ isolated_builtins["exec"] = None
 
 isolated_globals = {{"__builtins__": isolated_builtins}}
 
-# Read user code BEFORE modifying global state and opening files
 with open("USER_CODE_PATH_PLACEHOLDER", "r") as src:
     user_code = src.read()
 
