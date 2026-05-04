@@ -21,13 +21,14 @@ router = APIRouter(prefix="/api/agent", tags=["agent"])
 
 # --- Global references (set during boot) ---
 _orchestrator = None
+_runtime = None
 _approval_system = None
 _cron_manager = None
 _token_quota = None
 _file_access_guard = None
 _boot_time = None
 
-# ── Phase 10: HIL approval queue (in-memory) ─────────────────────────
+#  Phase 10: HIL approval queue (in-memory) 
 import uuid
 import threading
 
@@ -68,11 +69,12 @@ class CronAddRequest(BaseModel):
     interval_minutes: int = 0
 
 
-def set_orchestrator(orchestrator, approval_system=None, cron_manager=None, 
-                     token_quota=None, file_access_guard=None):
+def set_orchestrator(orchestrator, runtime=None, approval_system=None, cron_manager=None, 
+                      token_quota=None, file_access_guard=None):
     """Called once during main.py boot to inject the live subsystems."""
-    global _orchestrator, _approval_system, _cron_manager, _token_quota, _file_access_guard, _boot_time
+    global _orchestrator, _runtime, _approval_system, _cron_manager, _token_quota, _file_access_guard, _boot_time
     _orchestrator = orchestrator
+    _runtime = runtime
     _approval_system = approval_system
     _cron_manager = cron_manager
     _token_quota = token_quota
@@ -84,29 +86,39 @@ def set_orchestrator(orchestrator, approval_system=None, cron_manager=None,
 async def agent_chat(req: ChatRequest):
     """
     Primary chat endpoint. Sends user message through the full
-    PCA ReAct loop (memory → complexity dispatch → tool execution → response).
+    PCA ReAct loop (memory  complexity dispatch  tool execution  response).
     """
-    if not _orchestrator:
-        raise HTTPException(status_code=503, detail="PCA Orchestrator not initialized.")
+    if not _orchestrator or not _runtime:
+        raise HTTPException(status_code=503, detail="PCA Orchestrator or Runtime not initialized.")
 
     if not req.message.strip():
         raise HTTPException(status_code=400, detail="Empty message.")
 
     start = time.time()
     try:
-        # Run the orchestrator synchronously in a thread to not block the event loop
+        # Run the runtime execute_task in a thread to not block the event loop
         import asyncio
         loop = asyncio.get_event_loop()
-        response_text = await loop.run_in_executor(
+        
+        task_id = str(uuid.uuid4())
+        result = await loop.run_in_executor(
             None,
-            _orchestrator.process_user_message,
+            _runtime.execute_task,
+            task_id,
+            "local_user",
             req.message.strip()
         )
+        
+        if result["status"] == "completed":
+            response_text = result["result"]
+        else:
+            response_text = f"FAILURE: {result.get('error', 'Unknown runtime error')}"
+            
         elapsed = (time.time() - start) * 1000
         return ChatResponse(response=response_text, elapsed_ms=round(elapsed, 1))
     except Exception as e:
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Orchestrator error: {str(e)[:300]}")
+        raise HTTPException(status_code=500, detail=f"Runtime error: {str(e)[:300]}")
 
 
 @router.get("/status", response_model=StatusResponse)
@@ -143,7 +155,7 @@ async def set_autonomy(req: AutonomyRequest):
     return {"status": "ok", "autonomy_level": req.level}
 
 
-# ── Phase 9B: Cron Endpoints ──────────────────────────────────────────
+#  Phase 9B: Cron Endpoints 
 
 @router.get("/cron")
 async def list_cron_jobs():
@@ -183,7 +195,7 @@ async def remove_cron_job(job_id: str):
         raise HTTPException(status_code=404, detail=f"Job {job_id} not found.")
 
 
-# ── Phase 9B: Budget Endpoint ─────────────────────────────────────────
+#  Phase 9B: Budget Endpoint 
 
 @router.get("/budget")
 async def get_budget():
@@ -197,7 +209,7 @@ async def get_budget():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ── Health Endpoint (Phase 9A + 9B) ──────────────────────────────────
+#  Health Endpoint (Phase 9A + 9B) 
 
 @router.get("/health")
 async def agent_health():
@@ -254,7 +266,7 @@ async def agent_health():
     return health
 
 
-# ── Phase 10: HIL GUI Endpoints ───────────────────────────────────────
+#  Phase 10: HIL GUI Endpoints 
 
 class HILThresholdsRequest(BaseModel):
     LOW: str = "auto"
@@ -346,7 +358,7 @@ def wait_for_hil_decision(request_id: str, timeout_secs: int = 30) -> bool:
             if request_id in _hil_decisions:
                 return _hil_decisions.pop(request_id)
         time.sleep(0.5)
-    # Timeout → auto-deny
+    # Timeout  auto-deny
     with _hil_lock:
         if request_id in _hil_pending:
             _hil_pending[request_id]["resolved"] = True

@@ -126,7 +126,7 @@ class CronManager:
         # Persist to disk
         self._save_to_disk()
 
-        self.logger.info(f"Cron job added: [{job_id}] {job_type} @ {time_str or f'every {interval_minutes}min'} → '{prompt[:40]}...'")
+        self.logger.info(f"Cron job added: [{job_id}] {job_type} @ {time_str or f'every {interval_minutes}min'} ? '{prompt[:40]}...'")
         return job_id
 
     def remove(self, job_id: str) -> bool:
@@ -149,16 +149,16 @@ class CronManager:
     def list_all(self) -> str:
         """Return a formatted string listing all active cron jobs."""
         if not self.jobs:
-            return "📅 No scheduled cron jobs."
+            return "? No scheduled cron jobs."
 
-        lines = ["📅 **Active Cron Jobs:**\n"]
+        lines = ["? **Active Cron Jobs:**\n"]
         for job_id, job in self.jobs.items():
             if job.job_type == "daily":
                 schedule_str = f"Daily @ {job.time_str}"
             else:
                 schedule_str = f"Every {job.interval_minutes} min"
             
-            lines.append(f"  • `{job_id}` | {schedule_str} | \"{job.prompt[:50]}...\"")
+            lines.append(f"  ? `{job_id}` | {schedule_str} | \"{job.prompt[:50]}...\"")
 
         return "\n".join(lines)
 

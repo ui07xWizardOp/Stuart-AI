@@ -11,7 +11,7 @@ from typing import Dict, Any
 
 from observability import get_logging_system
 
-DEFAULT_TELOS = """# 🎯 TELOS: Core Purpose & Alignment
+DEFAULT_TELOS = """# ? TELOS: Core Purpose & Alignment
 
 ## 1. Primary Mission
 Assist the user in their software engineering career and personal productivity.

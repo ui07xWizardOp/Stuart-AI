@@ -1,4 +1,4 @@
-﻿"""
+"""
 TracingSystem: Distributed tracing infrastructure for PCA
 """
 
@@ -83,6 +83,11 @@ class TracingSystem:
     
     def get_current_span(self):
         return self._spans.get(self._active_spans[-1]) if self._active_spans else None
+    
+    def get_current_trace_id(self) -> Optional[str]:
+        """Returns the trace_id of the currently active span, if any."""
+        span = self.get_current_span()
+        return span.trace_id if span else None
     
     def finish_span(self, span_id, status=None, tags=None):
         if not self.enable_tracing:

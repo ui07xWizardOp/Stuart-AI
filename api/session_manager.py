@@ -46,15 +46,15 @@ class InterviewSession:
         """Handles the deepgram verification request from the client."""
         from services.stt_service import verify_deepgram_api_key
         self._touch()
-        print(f"➡️ [BACKEND] Received 'verify_deepgram' for session {self.session_id}")
+        print(f"-> [BACKEND] Received 'verify_deepgram' for session {self.session_id}")
         is_valid = await verify_deepgram_api_key()
-        print(f"⬅️ [BACKEND] Sending 'api_key_status' for Deepgram. Valid: {is_valid}")
+        print(f"<- [BACKEND] Sending 'api_key_status' for Deepgram. Valid: {is_valid}")
         await self._send_json("api_key_status", {"service": "deepgram", "valid": is_valid})
 
     async def handle_start_interview(self, payload: dict):
         """Handles the 'start_interview' message."""
         self._touch()
-        print(f"🎬 Session {self.session_id}: Starting interview...")
+        print(f"[START] Session {self.session_id}: Starting interview...")
         try:
             primary_provider_config = payload.get('aiProvider')
             secondary_provider_config = payload.get('aiSecondaryProvider')
@@ -75,9 +75,9 @@ class InterviewSession:
                 "available_presets": list(self.llm_manager.presets.keys()),
                 "health_status": health_results
             })
-            print(f"✅ Session {self.session_id}: Interview started and managers initialized.")
+            print(f"[OK] Session {self.session_id}: Interview started and managers initialized.")
         except Exception as e:
-            print(f"❌ CRITICAL: Session {self.session_id}: Failed to start interview: {e}")
+            print(f"[CRITICAL] Session {self.session_id}: Failed to start interview: {e}")
             await self._send_json("error", {"message": f"Failed to initialize AI providers: {str(e)}"})
 
     async def handle_audio_chunk(self, payload: dict):
@@ -116,7 +116,7 @@ class InterviewSession:
         """Handles vision analysis requests."""
         self._touch()
         try:
-            print(f"🔍 Session {self.session_id}: Processing vision analysis request...")
+            print(f"[VISION] Session {self.session_id}: Processing vision analysis request...")
             
             prompt = payload.get('prompt', '')
             screenshots = payload.get('screenshots', [])
@@ -140,7 +140,7 @@ class InterviewSession:
             provider_name = vision_config['provider']
             model_name = vision_config['model']
             
-            print(f"🧠 Analyzing {len(screenshots)} screenshots with {provider_name}-{model_name}")
+            print(f"[VISION] Analyzing {len(screenshots)} screenshots with {provider_name}-{model_name}")
             
             analysis, result_info = await vision_service.analyze_coding_problem(
                 provider_name=provider_name,
@@ -159,10 +159,10 @@ class InterviewSession:
                 **result_info
             })
             
-            print(f"✅ Session {self.session_id}: Vision analysis completed successfully")
+            print(f"[OK] Session {self.session_id}: Vision analysis completed successfully")
             
         except Exception as e:
-            print(f"❌ CRITICAL: Session {self.session_id}: Vision analysis failed: {e}")
+            print(f"[CRITICAL] Session {self.session_id}: Vision analysis failed: {e}")
             await self._send_json("vision_analysis_result", {
                 "success": False,
                 "error": f"Vision analysis failed: {str(e)}"
@@ -170,14 +170,14 @@ class InterviewSession:
 
     async def handle_end_interview(self, payload: dict):
         """Handles the end of an interview."""
-        print(f"🛑 Session {self.session_id}: Ending interview.")
+        print(f"[STOP] Session {self.session_id}: Ending interview.")
         await self.cleanup()
         session_manager.remove_session(self.session_id)
 
     async def handle_reset_session(self, payload: dict):
         """Handles the reset of a session's context."""
         self._touch()
-        print(f"🔄 Session {self.session_id}: Resetting interview context...")
+        print(f"[RESET] Session {self.session_id}: Resetting interview context...")
         self.transcript_buffer = ""
         if self.silence_timer:
             self.silence_timer.cancel()
@@ -186,7 +186,7 @@ class InterviewSession:
             self.llm_manager.reset_context()
 
         await self._send_json("session_reset_complete", {"status": "ok"})
-        print(f"✅ Session {self.session_id}: Context has been reset.")
+        print(f"[OK] Session {self.session_id}: Context has been reset.")
 
     async def initialize_managers(self, primary_provider_config, secondary_provider_config, primary_vision_config, secondary_vision_config, onboarding_context):
         """Initializes all necessary managers for the session."""
@@ -221,7 +221,7 @@ class InterviewSession:
         transcript = self.transcript_buffer
         self.transcript_buffer = ""
         
-        print(f"✅ Silence detected. Processing transcript for session {self.session_id}: {transcript}")
+        print(f"[OK] Silence detected. Processing transcript for session {self.session_id}: {transcript}")
         if not self.llm_manager or not self.websocket:
             return
 
@@ -234,10 +234,10 @@ class InterviewSession:
             answer, result_info = await self.llm_manager.get_ai_answer(transcript, stream_callback)
             
             await self._send_json("ai_answer_complete", {"answer": answer, **result_info})
-            print(f"🤖 AI STREAMING COMPLETE for session {self.session_id}")
+            print(f"[AI] STREAMING COMPLETE for session {self.session_id}")
 
         except Exception as e:
-            print(f"❌ CRITICAL: Error processing transcript for session {self.session_id}: {e}")
+            print(f"[CRITICAL] Error processing transcript for session {self.session_id}: {e}")
             await self._send_json("error", {"message": "Error processing transcript."})
 
     async def on_transcript(self, data):
@@ -314,7 +314,7 @@ class SessionManager:
         """Start the background cleanup task for stale sessions."""
         if self._cleanup_task is None or self._cleanup_task.done():
             self._cleanup_task = asyncio.create_task(self._cleanup_loop())
-            print("🧹 Session cleanup task started (checks every 5 minutes)")
+            print("Session cleanup task started (checks every 5 minutes)")
 
     async def _cleanup_loop(self):
         """Periodically clean up stale sessions."""
@@ -339,12 +339,12 @@ class SessionManager:
                 try:
                     await session.cleanup()
                 except Exception as e:
-                    print(f"⚠️ Error cleaning up stale session {sid}: {e}")
+                    print(f"Error cleaning up stale session {sid}: {e}")
                 del self.active_sessions[sid]
-                print(f"🧹 Cleaned up stale session: {sid} (remaining: {len(self.active_sessions)})")
+                print(f"Cleaned up stale session: {sid} (remaining: {len(self.active_sessions)})")
         
         if stale_ids:
-            print(f"🧹 Cleaned up {len(stale_ids)} stale session(s)")
+            print(f"Cleaned up {len(stale_ids)} stale session(s)")
 
 # Create a single, global instance of the SessionManager
 session_manager = SessionManager()

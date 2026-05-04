@@ -23,9 +23,9 @@ _env_example_path = Path(".env.example")
 
 if not _env_path.exists() and _env_example_path.exists():
     shutil.copy2(_env_example_path, _env_path)
-    print("📄 Created .env from .env.example — please fill in your API keys!")
+    print(" Created .env from .env.example  please fill in your API keys!")
 elif not _env_path.exists() and not _env_example_path.exists():
-    print("⚠️ No .env or .env.example found. The app may fail to start without a .env file.")
+    print(" No .env or .env.example found. The app may fail to start without a .env file.")
 
 from api import websocket, config_api
 from api import agent_api
@@ -41,11 +41,11 @@ def find_free_port(preferred: int = 8002) -> int:
             return preferred
         except OSError:
             pass
-    # Preferred port is occupied — let the OS pick a free one
+    # Preferred port is occupied  let the OS pick a free one
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(('127.0.0.1', 0))
         port = s.getsockname()[1]
-    print(f"⚠️ Port {preferred} is busy, using port {port} instead")
+    print(f" Port {preferred} is busy, using port {port} instead")
     return port
 
 # --- Development Flag (now from .env) ---
@@ -80,13 +80,13 @@ class GlobalCommandMonitor:
         try:
             if os.path.exists(self.command_file):
                 os.remove(self.command_file)
-                print("🧹 Cleared old global command file")
+                print(" Cleared old global command file")
         except Exception as e:
-            print(f"⚠️ Could not clear old command file: {e}")
+            print(f" Could not clear old command file: {e}")
         
         self.running = True
         self._monitor_task = asyncio.create_task(self._async_monitor_loop())
-        print("🎮 Global command monitor started")
+        print(" Global command monitor started")
         
     async def stop_monitoring(self):
         """Stop the command monitoring"""
@@ -97,7 +97,7 @@ class GlobalCommandMonitor:
                 await self._monitor_task
             except asyncio.CancelledError:
                 pass
-        print("🎮 Global command monitor stopped")
+        print(" Global command monitor stopped")
     
     async def _async_monitor_loop(self):
         """Async monitoring loop that checks for commands with improved performance"""
@@ -121,7 +121,7 @@ class GlobalCommandMonitor:
                                 # Clean up the command file after successful processing
                                 try:
                                     os.remove(self.command_file)
-                                    print(f"🧹 Cleaned up command file after processing")
+                                    print(f" Cleaned up command file after processing")
                                 except Exception as cleanup_error:
                                     # Don't fail if cleanup fails
                                     pass
@@ -135,7 +135,7 @@ class GlobalCommandMonitor:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                print(f"❌ Error in command monitor: {e}")
+                print(f" Error in command monitor: {e}")
                 await asyncio.sleep(1)  # Wait longer on error
                 
     def _process_command(self, command_data):
@@ -149,7 +149,7 @@ class GlobalCommandMonitor:
         
         # Ignore commands during startup to prevent processing old/accidental commands
         if time.time() - self.startup_time < self.startup_delay:
-            print(f"🎮 Ignoring global command during startup: {command}")
+            print(f" Ignoring global command during startup: {command}")
             return False
         
         # Create a unique command identifier for deduplication
@@ -160,7 +160,7 @@ class GlobalCommandMonitor:
         if (self.last_processed_command and 
             self.last_processed_command['id'] == command_id and 
             current_time - self.last_processed_command['time'] < self.command_cooldown):
-            print(f"🎮 Ignoring duplicate command within cooldown: {command}")
+            print(f" Ignoring duplicate command within cooldown: {command}")
             return False
         
         # Update last processed command
@@ -170,7 +170,7 @@ class GlobalCommandMonitor:
             'command': command
         }
             
-        print(f"🎮 Processing global command: {command}")
+        print(f" Processing global command: {command}")
         
         # Execute the command by sending it to the browser
         try:
@@ -212,16 +212,16 @@ class GlobalCommandMonitor:
                     # Auto-select AI preset
                     self._execute_browser_command('if (window.switchPreset) { window.switchPreset("auto"); } else { console.warn("switchPreset not available"); }')
                 else:
-                    print(f"⚠️ Unknown context-aware action: {action}")
+                    print(f" Unknown context-aware action: {action}")
                     return False
             else:
-                print(f"⚠️ Unknown global command: {command}")
+                print(f" Unknown global command: {command}")
                 return False
                 
             return True  # Command processed successfully
             
         except Exception as e:
-            print(f"❌ Error executing global command: {e}")
+            print(f" Error executing global command: {e}")
             return False
             
     def _execute_browser_command(self, js_code):
@@ -237,16 +237,16 @@ class GlobalCommandMonitor:
                 # Try to execute with error handling
                 try:
                     result = window.evaluate_js(js_code)
-                    print(f"✅ Executed global command in browser: {js_code.split('&&')[0]}...")
+                    print(f" Executed global command in browser: {js_code.split('&&')[0]}...")
                 except Exception as js_error:
                     # If direct execution fails, try wrapping in setTimeout
                     wrapped_code = f"setTimeout(() => {{ try {{ {js_code} }} catch(e) {{ console.warn('Global command error:', e); }} }}, 100);"
                     window.evaluate_js(wrapped_code)
-                    print(f"✅ Executed global command in browser (delayed): {js_code.split('&&')[0]}...")
+                    print(f" Executed global command in browser (delayed): {js_code.split('&&')[0]}...")
             else:
-                print("⚠️ No webview window available for command execution")
+                print(" No webview window available for command execution")
         except Exception as e:
-            print(f"❌ Failed to execute browser command: {e}")
+            print(f" Failed to execute browser command: {e}")
 
 # Create global command monitor instance
 command_monitor = GlobalCommandMonitor()
@@ -263,6 +263,14 @@ def boot_pca_brain():
     try:
         from dotenv import load_dotenv
         load_dotenv()
+
+        from observability import initialize_logging, get_logging_system
+        from observability.tracing_system import initialize_tracing
+        
+        initialize_logging()
+        initialize_tracing()
+        logger = get_logging_system()
+        logger.info("Stuart-AI infrastructure systems (Logging, Tracing) initialized.")
 
         from core.model_router import ModelRouter
         from core.prompt_manager import PromptManager
@@ -285,18 +293,19 @@ def boot_pca_brain():
         from tools.toolset_distributor import ToolsetDistributor
         from automation.cron_manager import CronManager
         from security.file_access_guard import FileAccessGuard
+        from core.system_mode_manager import SystemModeManager
 
         from events import initialize_event_bus
         event_bus = initialize_event_bus()
 
-        # Phase 11: Alert Router — push FLASH/PRIORITY events to OS
+        # Phase 11: Alert Router  push FLASH/PRIORITY events to OS
         try:
             from events.alert_router import AlertRouter
             alert_router = AlertRouter(event_bus)
         except Exception as e:
-            print(f"⚠️ Failed to init AlertRouter: {e}")
+            print(f" Failed to init AlertRouter: {e}")
 
-        # Phase 9A: Token Quota — enforce per-session & per-day budgets
+        # Phase 9A: Token Quota  enforce per-session & per-day budgets
         token_quota = TokenQuota(
             daily_limit=500_000,        # 500K tokens/day total
             session_limit=100_000,      # 100K tokens/session
@@ -321,22 +330,23 @@ def boot_pca_brain():
             from cognitive.telos_framework import TelosFramework
             telos_framework = TelosFramework()
         except Exception as e:
-            print(f"⚠️ Failed to init TelosFramework: {e}")
+            print(f" Failed to init TelosFramework: {e}")
             telos_framework = None
             
         approval_system = ApprovalSystem(autonomy_level=AutonomyLevel.MODERATE)
 
-        # Phase 9A: Context Compactor — uses local Ollama for free summarization
+        # Phase 9A: Context Compactor  uses local Ollama for free summarization
         compactor = ContextCompactor(
             max_context_tokens=6000,
             local_llm_client=router.local_client,
         )
 
-        # Phase 9A: Session Checkpoint — auto-save/resume on crash
+        # Phase 9A: Session Checkpoint  auto-save/resume on crash
         checkpoint = SessionCheckpoint()
+        mode_manager = SystemModeManager()
 
         registry = ToolRegistry()
-        executor = ToolSandboxExecutor(registry=registry, approval_system=approval_system)
+        executor = ToolSandboxExecutor(registry=registry, approval_system=approval_system, mode_manager=mode_manager)
 
         # Phase 11: MCP Bridge Manager
         try:
@@ -353,7 +363,7 @@ def boot_pca_brain():
                         cmd = [conf["command"]] + conf.get("args", [])
                         mcp_manager.connect_server(name, cmd)
         except Exception as e:
-            print(f"⚠️ Failed to init MCPBridgeManager: {e}")
+            print(f" Failed to init MCPBridgeManager: {e}")
 
         # Register core tools
         try:
@@ -363,6 +373,7 @@ def boot_pca_brain():
             from tools.core.rag_search_tool import RagSearchTool
             from tools.core.database_tool import DatabaseQueryTool
             from tools.core.obsidian_tool import ObsidianTool
+            from tools.core.browser_agent_tool import BrowserAgentTool
             
             registry.register_tool(FileManagerTool(sandbox_dir="Stuart-AI/data/sandbox/"))
             registry.register_tool(PythonExecutorTool())
@@ -370,19 +381,22 @@ def boot_pca_brain():
             registry.register_tool(RagSearchTool())
             registry.register_tool(DatabaseQueryTool())
             registry.register_tool(ObsidianTool(vault_path="Stuart-AI/data/Agent_Vault/"))
+            registry.register_tool(BrowserAgentTool())
         except Exception as tool_err:
-            print(f"⚠️ Some tools failed to register: {tool_err}")
+            print(f" Some tools failed to register: {tool_err}")
 
-        # Phase 9B: Toolset Distributor — filter tools per task type (token savings)
+        # Phase 9B: Toolset Distributor  filter tools per task type (token savings)
         toolset_distributor = ToolsetDistributor(registry=registry)
 
-        # Phase 9B: File Access Guard — block dangerous system paths
+        # Phase 9B: File Access Guard  block dangerous system paths
         file_access_guard = FileAccessGuard()
 
-        # Phase 9B: Cron Manager — proactive scheduled routines
+        # Phase 9B: Cron Manager  proactive scheduled routines
         from automation.task_queue import TaskQueue
         task_queue = TaskQueue()
         from automation.scheduler import AutomationScheduler
+        # Use a mutable ref so cron callbacks can access the orchestrator (set after construction)
+        orchestrator_ref = [None]
         scheduler = AutomationScheduler(task_queue_push=lambda prompt: orchestrator_ref[0].process_user_message(prompt) if orchestrator_ref[0] else None)
         cron_manager = CronManager(scheduler=scheduler)
         cron_manager.load_persisted()  # Restore jobs from last session
@@ -393,13 +407,19 @@ def boot_pca_brain():
         import schedule
         schedule.every().day.at("23:59").do(auto_consolidator.run_consolidation)
         
+        # Phase 11: Resource Cleaner  scheduled daily cleanup of stale artifacts
+        try:
+            from services.resource_cleaner import ResourceCleaner
+            resource_cleaner = ResourceCleaner()
+            schedule.every().day.at("04:00").do(resource_cleaner.run_cleanup)
+            print(" ResourceCleaner scheduled daily at 04:00.")
+        except Exception as e:
+            print(f" Failed to init ResourceCleaner: {e}")
+        
         scheduler.start()
 
-        # Phase 9B: Slash Command Router — intercept /commands
+        # Phase 9B: Slash Command Router  intercept /commands
         slash_router = SlashCommandRouter()
-
-        # Use a mutable ref so cron callbacks can access the orchestrator
-        orchestrator_ref = [None]
 
         orchestrator = Orchestrator(
             event_bus=event_bus,
@@ -419,19 +439,31 @@ def boot_pca_brain():
         orchestrator_ref[0] = orchestrator
         auto_consolidator.orchestrator = orchestrator
 
+        # Phase 11: Agent Runtime Controller
+        from core.agent_runtime import AgentRuntime
+        runtime = AgentRuntime(
+            max_iterations=20,
+            max_tool_calls=50,
+            max_llm_calls=100,
+            max_execution_time=600,
+            enable_reflection=True,
+            enable_state_persistence=True
+        )
+        runtime.orchestrator = orchestrator
+
         # Inject runtime context into the slash router
         import time as _time
         
         # Phase 13: Tracing System
-        from observability.tracing_system import initialize_tracing
-        tracing = initialize_tracing()
+        from observability.tracing_system import get_tracing_system
+        tracing = get_tracing_system()
         
         # Phase 13: Skills Marketplace
         try:
             from core.skills_marketplace import SkillsMarketplace
             skills_marketplace = SkillsMarketplace()
         except Exception as e:
-            print(f"⚠️ Failed to init SkillsMarketplace: {e}")
+            print(f" Failed to init SkillsMarketplace: {e}")
             skills_marketplace = None
         
         slash_router.set_context(
@@ -448,7 +480,7 @@ def boot_pca_brain():
             boot_time=_time.time(),
         )
 
-        # Phase 11: Plugin Manager — load external tools & commands
+        # Phase 11: Plugin Manager  load external tools & commands
         try:
             from core.plugin_manager import PluginManager
             plugin_manager = PluginManager(
@@ -458,10 +490,12 @@ def boot_pca_brain():
             )
             plugin_manager.load_all()
         except Exception as e:
-            print(f"⚠️ Failed to load plugins: {e}")
+            print(f" Failed to load plugins: {e}")
 
         agent_api.set_orchestrator(
-            orchestrator, approval_system,
+            orchestrator, 
+            runtime=runtime,
+            approval_system=approval_system,
             cron_manager=cron_manager,
             token_quota=token_quota,
             file_access_guard=file_access_guard,
@@ -471,22 +505,30 @@ def boot_pca_brain():
         from api.agent_api import queue_hil_request, wait_for_hil_decision
         if approval_system and hasattr(approval_system, 'set_gui_queue_hooks'):
             approval_system.set_gui_queue_hooks(queue_hil_request, wait_for_hil_decision)
-            print("🔗 GUI HIL queue hooks injected into ApprovalSystem.")
+            print(" GUI HIL queue hooks injected into ApprovalSystem.")
         
-        # Phase 13: Telegram Bot (optional — only if token is set)
+        # Phase 13: Telegram Bot (optional  only if token is set)
         try:
             telegram_token = os.environ.get("TELEGRAM_BOT_TOKEN")
             if telegram_token:
                 from channels.telegram_bot import StuartTelegramBot
                 telegram_bot = StuartTelegramBot(token=telegram_token, orchestrator=orchestrator)
                 telegram_bot.start()
-                print("📡 Telegram bot channel started.")
+                print(" Telegram bot channel started.")
         except Exception as e:
-            print(f"⚠️ Failed to start Telegram bot: {e}")
+            print(f"Failed to start Telegram bot: {e}")
         
-        print("🧠 PCA Orchestrator brain booted successfully (Phase 9B — Power Features).")
+        logger.info("PCA Orchestrator brain booted successfully (Phase 9B - Power Features).")
+        print("PCA Orchestrator brain booted successfully (Phase 9B - Power Features).")
     except Exception as e:
-        print(f"⚠️ PCA brain boot failed (agent chat will be offline): {e}")
+        import traceback
+        error_msg = f"PCA brain boot failed: {str(e)}"
+        if logger:
+            logger.error(error_msg, context={"exception": traceback.format_exc()})
+        else:
+            print(error_msg)
+            traceback.print_exc()
+        print(f"PCA brain boot failed (agent chat will be offline): {e}")
 
 boot_pca_brain()
 
@@ -512,16 +554,30 @@ class UvicornServer:
         
     async def start(self):
         """Start the Uvicorn server as an asyncio task"""
+        print(f" Attempting to start Uvicorn server on {self.host}:{self.port}...")
         config = uvicorn.Config(
             app=self.app,
             host=self.host,
             port=self.port,
-            log_level="warning",
-            loop="asyncio"
+            log_level="info",
+            loop="asyncio",
+            lifespan="off"
         )
         self.server = uvicorn.Server(config)
-        self.server_task = asyncio.create_task(self.server.serve())
-        print(f"🚀 Uvicorn server started on {self.host}:{self.port}")
+        
+        # Create a wrapper to catch server errors
+        async def serve_with_error_handling():
+            try:
+                print(f" Server.serve() task starting on {self.host}:{self.port}")
+                await self.server.serve()
+                print(" Server.serve() task completed normally")
+            except Exception as e:
+                print(f" CRITICAL: Uvicorn server error: {e}")
+                import traceback
+                traceback.print_exc()
+
+        self.server_task = asyncio.create_task(serve_with_error_handling())
+        print(f" Uvicorn server task created for {self.host}:{self.port}")
         
     async def stop(self):
         """Stop the Uvicorn server gracefully"""
@@ -536,7 +592,7 @@ class UvicornServer:
                         await self.server_task
                     except asyncio.CancelledError:
                         pass
-        print("🛑 Uvicorn server stopped")
+        print(" Uvicorn server stopped")
 
 # Global server instance
 uvicorn_server = UvicornServer(app)
@@ -556,20 +612,20 @@ class AsyncioServiceThread:
         self.shutdown_event = threading.Event()
         self.thread = threading.Thread(target=self._run_asyncio_thread, daemon=True)
         self.thread.start()
-        print("🚀 Asyncio services thread started")
+        print(" Asyncio services thread started")
         
     def stop(self):
         """Stop the asyncio services gracefully"""
         if self.shutdown_event:
-            print("🛑 Requesting asyncio services shutdown...")
+            print(" Requesting asyncio services shutdown...")
             self.shutdown_event.set()
             
         if self.thread and self.thread.is_alive():
             self.thread.join(timeout=10)  # Wait up to 10 seconds
             if self.thread.is_alive():
-                print("⚠️ Asyncio thread did not stop gracefully")
+                print(" Asyncio thread did not stop gracefully")
             else:
-                print("✅ Asyncio services thread stopped")
+                print(" Asyncio services thread stopped")
     
     def _run_asyncio_thread(self):
         """Run the asyncio event loop in this thread"""
@@ -578,20 +634,20 @@ class AsyncioServiceThread:
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
             
-            print("🔄 Starting asyncio event loop in background thread")
+            print(" Starting asyncio event loop in background thread")
             
             # Run the async services
             self.loop.run_until_complete(self._run_async_services())
             
         except Exception as e:
-            print(f"❌ Error in asyncio thread: {e}")
+            print(f" Error in asyncio thread: {e}")
         finally:
             if self.loop:
                 try:
                     # Clean up any remaining tasks
                     pending = asyncio.all_tasks(self.loop)
                     if pending:
-                        print(f"🧹 Cancelling {len(pending)} pending tasks...")
+                        print(f" Cancelling {len(pending)} pending tasks...")
                         for task in pending:
                             task.cancel()
                         
@@ -601,39 +657,48 @@ class AsyncioServiceThread:
                         )
                     
                     self.loop.close()
-                    print("✅ Asyncio event loop closed")
+                    print(" Asyncio event loop closed")
                 except Exception as e:
-                    print(f"⚠️ Error during loop cleanup: {e}")
+                    print(f" Error during loop cleanup: {e}")
     
     async def _run_async_services(self):
         """Run all async services concurrently"""
         try:
-            print("🚀 Starting async services...")
+            print(" Starting async services loop...")
             
             # Start the Uvicorn server
+            print(" Starting Uvicorn server...")
             await uvicorn_server.start()
+            print(" Uvicorn server startup call completed")
             
             # Start the session cleanup task
+            print(" Starting session cleanup task...")
             session_manager.start_cleanup_task()
             
             # Start the global command monitor
+            print(" Starting global command monitor...")
             await command_monitor.start_monitoring()
             
+            print(" All async services started. Entering wait loop.")
             # Wait for shutdown signal
             while not self.shutdown_event.is_set():
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.5)
             
-            print("🛑 Shutdown signal received, cleaning up...")
+            print(" Shutdown signal detected in async services loop.")
             
         except Exception as e:
-            print(f"❌ Error in async services: {e}")
+            print(f" ERROR in _run_async_services: {e}")
+            import traceback
+            traceback.print_exc()
         finally:
+            print(" Entering _run_async_services finally block...")
             # Cleanup
             await self._cleanup_async_services()
+            print(" _run_async_services finally block completed")
     
     async def _cleanup_async_services(self):
         """Clean up all async services"""
-        print("🧹 Cleaning up async services...")
+        print(" Cleaning up async services...")
         
         # Stop the command monitor
         await command_monitor.stop_monitoring()
@@ -641,7 +706,7 @@ class AsyncioServiceThread:
         # Stop the server
         await uvicorn_server.stop()
         
-        print("✅ Async services cleanup complete")
+        print(" Async services cleanup complete")
 
 # Global asyncio service thread instance
 asyncio_service_thread = AsyncioServiceThread()
@@ -660,19 +725,19 @@ def setup_webview_window():
 
     # Window shown event handler
     def on_window_shown():
-        print(f"🔧 Window shown event fired. DEV_MODE = {DEV_MODE}")
+        print(f" Window shown event fired. DEV_MODE = {DEV_MODE}")
         
         if not DEV_MODE:
-            print("🛡️ DEV_MODE is False - Applying screen capture protection...")
+            print(" DEV_MODE is False - Applying screen capture protection...")
             protection_success = window_manager.apply_capture_protection(window)
             if protection_success:
-                print("✅ Screen capture protection successfully applied!")
+                print(" Screen capture protection successfully applied!")
             else:
-                print("❌ CRITICAL: Screen capture protection FAILED!")
-                print("   🚨 WARNING: Window will be visible in screen recordings!")
+                print(" CRITICAL: Screen capture protection FAILED!")
+                print("    WARNING: Window will be visible in screen recordings!")
         else:
-            print("ℹ️ DEV_MODE is True. Skipping screen capture protection.")
-            print("   📋 Note: Window WILL be visible in screen recordings during development")
+            print(" DEV_MODE is True. Skipping screen capture protection.")
+            print("    Note: Window WILL be visible in screen recordings during development")
         
         # Set up window transparency and always-on-top
         import time
@@ -680,7 +745,7 @@ def setup_webview_window():
         
         # Find window and configure always-on-top (but NOT transparency yet)
         if window_manager.find_stuart_window():
-            print("🔍 Window found - setting up always-on-top only")
+            print(" Window found - setting up always-on-top only")
             
             # Wait a bit more before setting always-on-top
             time.sleep(0.5)
@@ -690,25 +755,25 @@ def setup_webview_window():
             for attempt in range(3):
                 always_on_top_success = window_manager.set_app_always_on_top(True)
                 if always_on_top_success:
-                    print("📌 Window set to always stay on top")
+                    print(" Window set to always stay on top")
                     break
                 else:
-                    print(f"⚠️ Always-on-top attempt {attempt + 1} failed, retrying...")
+                    print(f" Always-on-top attempt {attempt + 1} failed, retrying...")
                     time.sleep(0.3)
             
             if not always_on_top_success:
-                print("⚠️ Failed to set always on top after 3 attempts")
+                print(" Failed to set always on top after 3 attempts")
                 
-            print("ℹ️ Transparency will be applied only during live interview")
+            print(" Transparency will be applied only during live interview")
         else:
-            print("⚠️ Could not find Stuart window for window management")
+            print(" Could not find Stuart window for window management")
         
         # Start the global hotkey listener
         window_manager.window_manager.start_hotkey_listener()
     
     # Window closing event handler
     def on_window_closing():
-        print("🛑 Window closing, shutting down services...")
+        print(" Window closing, shutting down services...")
         asyncio_service_thread.stop()
         return True  # Allow window to close
     
@@ -720,8 +785,8 @@ def setup_webview_window():
 # --- Main Application Entry Point ---
 def main():
     """Main application entry point"""
-    print("🚀 Starting Stuart with corrected asyncio-native architecture...")
-    print("   📋 Architecture: pywebview on main thread, asyncio services in background thread")
+    print(" Starting Stuart with corrected asyncio-native architecture...")
+    print("    Architecture: pywebview on main thread, asyncio services in background thread")
     
     try:
         # Start the asyncio services in background thread
@@ -734,18 +799,18 @@ def main():
         window = setup_webview_window()
         
         # Start the pywebview event loop (blocks until window closes)
-        print("🖥️ Starting pywebview on main thread...")
+        print(" Starting pywebview on main thread...")
         webview.start(debug=DEV_MODE)
         
     except KeyboardInterrupt:
-        print("🛑 Application interrupted by user")
+        print(" Application interrupted by user")
     except Exception as e:
-        print(f"❌ Application error: {e}")
+        print(f" Application error: {e}")
     finally:
         # Ensure cleanup
-        print("🧹 Final cleanup...")
+        print(" Final cleanup...")
         asyncio_service_thread.stop()
-        print("✅ Application shutdown complete")
+        print(" Application shutdown complete")
 
 if __name__ == '__main__':
     main()

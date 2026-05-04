@@ -10,7 +10,25 @@ import {
     isScreenSharingAvailable
 } from './audio_handler.js';
 import muteManager from './mute-manager.js';
-import { autofillForTesting } from './dev.js';
+// Developer utilities (formerly in dev.js)
+function autofillForTesting() {
+    console.log("🛠️ Autofilling for testing...");
+    const userName = document.getElementById('user-name');
+    const userCompany = document.getElementById('user-company');
+    const userRole = document.getElementById('user-role');
+    const userResume = document.getElementById('user-resume');
+    
+    if (userName) userName.value = "John Doe";
+    if (userCompany) userCompany.value = "Google";
+    if (userRole) userRole.value = "Senior Software Engineer";
+    if (userResume) userResume.value = "Experienced engineer with focus on AI and distributed systems.";
+    
+    const focusCheckboxes = document.querySelectorAll('input[name="focus"]');
+    if (focusCheckboxes.length > 0) {
+        focusCheckboxes[0].checked = true;
+        focusCheckboxes[2].checked = true;
+    }
+}
 import { loadConfig, isDev, devLog, devWarn, devError, applyConsoleGate } from './config.js';
 import liveInterviewUI from './live-interview.js';
 import hotkeyManager from './hotkeys.js';

@@ -24,6 +24,7 @@ from .base import BaseTool, ToolRiskLevel, ToolResult
 from security.capability_tokens import CapabilityTokenSystem
 from security.dlp_engine import DataLossPreventionEngine
 from security.approval_system import ApprovalSystem
+from core.system_mode_manager import SystemModeManager
 
 class RestrictedRuntimeTimeoutError(Exception):
     """Raised when a tool execution exceeds the configured sandbox timeout."""
@@ -42,7 +43,8 @@ class ToolSandboxExecutor:
         default_timeout_sec: float = 30.0,
         capability_system: Optional[CapabilityTokenSystem] = None,
         dlp_engine: Optional[DataLossPreventionEngine] = None,
-        approval_system: Optional[ApprovalSystem] = None
+        approval_system: Optional[ApprovalSystem] = None,
+        mode_manager: Optional[SystemModeManager] = None
     ):
         self.logger = get_logging_system()
         self.registry = registry
@@ -50,6 +52,7 @@ class ToolSandboxExecutor:
         self.capability_system = capability_system
         self.dlp_engine = dlp_engine
         self.approval_system = approval_system
+        self.mode_manager = mode_manager
         self.logger.info("ToolSandboxExecutor initialized")
 
     def execute_tool(
@@ -77,7 +80,12 @@ class ToolSandboxExecutor:
         elif self.capability_system and not capability_token_id:
             self.logger.warning(f"Executing {tool_name}.{action} generically without a token, bypassing explicit capability check.")
 
-        # 1. Parameter Validation
+        # 1. System Mode Check
+        if self.mode_manager and not self.mode_manager.is_tool_allowed(tool.risk_level):
+            self.logger.error(f"Execution denied: Tool '{tool_name}' (Risk: {tool.risk_level.value}) is not allowed in current system mode '{self.mode_manager.current_mode.value}'.")
+            raise PermissionError(f"Tool execution blocked by current system governance mode ({self.mode_manager.current_mode.value}).")
+
+        # 2. Parameter Validation
         self._validate_parameters(tool_name, tool.parameter_schema, parameters)
 
         # 2. Risk Evaluation & HIL Interception (Task 30)
@@ -101,7 +109,8 @@ class ToolSandboxExecutor:
             if isinstance(result, ToolResult):
                 result.execution_time_ms = elapsed_ms
                 if not result.success:
-                    raise RuntimeError(f"Tool execution failed internally: {result.error}")
+                    self.logger.warning(f"Tool {tool_name} returned failure: {result.error}")
+                    return result  # Let the Orchestrator handle failure logic
                 raw_output = result.output
             else:
                 self.logger.warning(f"Tool {tool_name} returned non-ToolResult format.")

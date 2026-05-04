@@ -8,6 +8,8 @@ from typing import Dict, List, Optional, Any
 from .base import BaseTool, CapabilityDescriptor
 
 
+import threading
+
 class ToolRegistry:
     """Central dispatcher managing tool lifecycle and capability indexing.
 
@@ -24,6 +26,7 @@ class ToolRegistry:
         self._tools: Dict[str, BaseTool] = {}
         # Maps capability_name -> List of tool names supporting it
         self._capabilities: Dict[str, List[str]] = {}
+        self._lock = threading.Lock()
 
     def register_tool(self, tool: BaseTool) -> None:
         """
@@ -32,44 +35,45 @@ class ToolRegistry:
         if not isinstance(tool, BaseTool):
             raise TypeError(f"Tool must inherit from BaseTool, got {type(tool)}")
 
-        if tool.name in self._tools:
-            raise ValueError(f"Tool with name '{tool.name}' is already registered.")
+        with self._lock:
+            if tool.name in self._tools:
+                raise ValueError(f"Tool with name '{tool.name}' is already registered.")
 
-        # Basic metadata validation
-        if not tool.name or not tool.description:
-            raise ValueError("Tool name and description are absolutely required.")
+            self._tools[tool.name] = tool
 
-        self._tools[tool.name] = tool
-
-        # Index by capability
-        for cap in tool.capabilities:
-            if cap.capability_name not in self._capabilities:
-                self._capabilities[cap.capability_name] = []
-            self._capabilities[cap.capability_name].append(tool.name)
+            # Index by capability
+            for cap in tool.capabilities:
+                if cap.capability_name not in self._capabilities:
+                    self._capabilities[cap.capability_name] = []
+                self._capabilities[cap.capability_name].append(tool.name)
 
     def get_tool(self, name: str) -> Optional[BaseTool]:
         """Retrieve a specific tool by its unique name."""
-        return self._tools.get(name)
+        with self._lock:
+            return self._tools.get(name)
 
     def get_all_tools(self) -> List[BaseTool]:
         """Retrieve all registered tools."""
-        return list(self._tools.values())
+        with self._lock:
+            return list(self._tools.values())
 
     def get_tools_by_capability(self, capability_name: str) -> List[BaseTool]:
         """Retrieve all tools that expose a specific capability."""
-        tool_names = self._capabilities.get(capability_name, [])
-        return [self._tools[name] for name in tool_names]
+        with self._lock:
+            tool_names = self._capabilities.get(capability_name, [])
+            return [self._tools[name] for name in tool_names]
 
     def get_all_capabilities(self) -> List[CapabilityDescriptor]:
         """Get a list of all distinct capabilities available across all tools."""
-        caps = []
-        seen = set()
-        for tool in self._tools.values():
-            for cap in tool.capabilities:
-                if cap.capability_name not in seen:
-                    caps.append(cap)
-                    seen.add(cap.capability_name)
-        return caps
+        with self._lock:
+            caps = []
+            seen = set()
+            for tool in self._tools.values():
+                for cap in tool.capabilities:
+                    if cap.capability_name not in seen:
+                        caps.append(cap)
+                        seen.add(cap.capability_name)
+            return caps
 
     def get_parameter_schema(self, tool_name: str) -> Optional[Dict[str, Any]]:
         """Retrieve the JSON schema for a tool's parameters."""

@@ -115,7 +115,7 @@ class SubAgentPool:
         """
         lines = [f"## Parallel Execution Report ({len(results)} sub-tasks)\n"]
         for i, r in enumerate(results, 1):
-            status = "✅" if r.success else "❌"
+            status = "?" if r.success else "?"
             lines.append(f"### {status} Sub-task {i}: {r.task[:80]}")
             lines.append(f"*Duration: {r.duration_ms:.0f}ms*\n")
             lines.append(r.output)

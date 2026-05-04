@@ -36,6 +36,7 @@ schedule
 # ── Knowledge & Research ────────────────────────────────
 wikipedia
 feedparser
+beautifulsoup4
 
 # ── Communication Channels ──────────────────────────────
 python-telegram-bot

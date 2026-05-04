@@ -1,25 +1,25 @@
 FROM python:3.12-slim
 
 # Set environment variables for headless execution
-ENV PYTHONDONTWRITEBYTECODE=1 \\
-    PYTHONUNBUFFERED=1 \\
-    HEADLESS_MODE=True \\
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    HEADLESS_MODE=True \
     DEBIAN_FRONTEND=noninteractive
 
 # Set the working directory
 WORKDIR /app
 
 # Install system dependencies (needed for psycopg2, etc.)
-RUN apt-get update && apt-get install -y --no-install-recommends \\
-    build-essential \\
-    libpq-dev \\
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the headless requirements file
 COPY requirements-headless.txt /app/requirements.txt
 
 # Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip \\
+RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application codebase

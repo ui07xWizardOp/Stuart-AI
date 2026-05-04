@@ -14,7 +14,7 @@ from observability import get_logging_system
 
 class TaskQueue:
     
-    def __init__(self, orchestrator_factory: Callable[[], Any], max_workers: int = 2):
+    def __init__(self, orchestrator_factory: Callable[[], Any] = None, max_workers: int = 2):
         self.logger = get_logging_system()
         # Pass a factory so children threads can instantiate fresh un-corrupted ReAct loops
         self.orchestrator_factory = orchestrator_factory
@@ -30,6 +30,9 @@ class TaskQueue:
         self.logger.info(f"Worker {job_id} picked up task: '{prompt[:30]}...'")
         
         try:
+            if not self.orchestrator_factory:
+                raise RuntimeError("TaskQueue.orchestrator_factory is not set. Cannot process background tasks.")
+            
             # Boot a fresh agent instance for this thread
             thread_agent = self.orchestrator_factory()
             

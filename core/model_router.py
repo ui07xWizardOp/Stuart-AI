@@ -1,5 +1,5 @@
 """
-Model Router (Phase 9A — Hardened Dual-LLM Dispatcher)
+Model Router (Phase 9A ? Hardened Dual-LLM Dispatcher)
 
 Manages multiple LLM provider backends and intelligently routes requests
 based on task complexity, cost constraints, and available latency quotas.
@@ -7,7 +7,7 @@ based on task complexity, cost constraints, and available latency quotas.
 Phase 9A additions:
   - Circuit Breaker: per-provider fault tolerance
   - Token Quota: per-session & per-day budget enforcement
-  - Smart Failover: Ollama trips → controlled Cloud failover (budget permitting)
+  - Smart Failover: Ollama trips ? controlled Cloud failover (budget permitting)
 """
 
 from enum import Enum
@@ -26,8 +26,8 @@ class ModelRouter:
     """
     Hardened Dual-LLM Dispatcher (Phase 9A).
     Routes prompts based on complexity/token heuristics to either:
-    - Ollama (Local, FAST_CHEAP) — protected by circuit breaker
-    - OpenAI (Cloud, REASONING) — protected by circuit breaker + token quota
+    - Ollama (Local, FAST_CHEAP) ? protected by circuit breaker
+    - OpenAI (Cloud, REASONING) ? protected by circuit breaker + token quota
     
     New in Phase 9A:
     - Circuit breakers prevent cascade failures when a provider is down
@@ -48,7 +48,7 @@ class ModelRouter:
         self.local_client = OllamaClient()
         self.cloud_client = OpenAIClient()
         
-        # Circuit breakers — one per provider
+        # Circuit breakers ? one per provider
         self.ollama_breaker = CircuitBreaker(
             name="ollama",
             failure_threshold=ollama_breaker_threshold,
@@ -64,7 +64,7 @@ class ModelRouter:
         self.quota = token_quota or TokenQuota()
         
         self.logger.info(
-            "🛡️ Hardened Dual-LLM Dispatcher initialized. "
+            "?? Hardened Dual-LLM Dispatcher initialized. "
             "(Local: Ollama [CB:3], Cloud: OpenAI [CB:2], Quota: active)"
         )
 
@@ -99,10 +99,10 @@ class ModelRouter:
         Failover logic:
         1. If target is FAST_CHEAP (Ollama):
            a. Try Ollama through its circuit breaker
-           b. If Ollama circuit is OPEN, check Cloud budget → failover to Cloud
+           b. If Ollama circuit is OPEN, check Cloud budget ? failover to Cloud
            c. If Cloud budget exhausted, raise hard error
         2. If target is REASONING (Cloud):
-           a. Check token quota → reject if budget exhausted
+           a. Check token quota ? reject if budget exhausted
            b. Try Cloud through its circuit breaker
            c. Record actual token usage
         """
@@ -116,9 +116,9 @@ class ModelRouter:
                 self.quota.record_usage("local", prompt_tokens=estimated_tokens, completion_tokens=estimated_tokens)
                 return result
             except CircuitOpenError as e:
-                # Ollama is down — try controlled Cloud failover
+                # Ollama is down ? try controlled Cloud failover
                 self.logger.warning(
-                    f"⚡ Ollama circuit OPEN. Attempting controlled Cloud failover..."
+                    f"? Ollama circuit OPEN. Attempting controlled Cloud failover..."
                 )
                 return self._cloud_failover(messages, estimated_tokens)
             except RuntimeError as e:
@@ -140,7 +140,7 @@ class ModelRouter:
         try:
             self.quota.check_budget("cloud", estimated_tokens * 2)  # *2 for prompt+completion
         except QuotaExceededError as e:
-            self.logger.error(f"💰 {e}")
+            self.logger.error(f"? {e}")
             raise
 
         # Execute through circuit breaker
@@ -159,7 +159,7 @@ class ModelRouter:
             self.quota.check_budget("cloud", estimated_tokens * 2)
         except QuotaExceededError:
             self.logger.error(
-                "🚫 Cannot failover to Cloud — daily budget exhausted. "
+                "? Cannot failover to Cloud ? daily budget exhausted. "
                 "Both Ollama (offline) and Cloud (budget exceeded) are unavailable."
             )
             raise RuntimeError(
@@ -167,7 +167,7 @@ class ModelRouter:
                 "Ollama is offline and Cloud API budget is exhausted."
             )
 
-        self.logger.info("☁️ Failover: Routing local task to Cloud API (within budget).")
+        self.logger.info("?? Failover: Routing local task to Cloud API (within budget).")
         return self._call_cloud(messages, estimated_tokens)
 
     def get_status(self) -> dict:

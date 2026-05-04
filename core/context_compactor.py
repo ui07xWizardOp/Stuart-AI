@@ -1,11 +1,11 @@
 """
-Context Compactor (Phase 9A — Hardening Sprint)
+Context Compactor (Phase 9A ? Hardening Sprint)
 
 Inspired by Hermes Agent's trajectory_compressor.py and CheetahClaws' compaction.py.
 
 Instead of just dropping oldest messages (what ContextManager does now),
 this module intelligently compresses older conversation turns into
-condensed summaries — preserving meaning while saving tokens.
+condensed summaries ? preserving meaning while saving tokens.
 
 Strategy:
   1. Detect when context window is > 80% full
@@ -19,6 +19,8 @@ import math
 from typing import List, Dict, Any, Optional
 from observability import get_logging_system
 
+
+import threading
 
 class ContextCompactor:
     """
@@ -40,6 +42,7 @@ class ContextCompactor:
         self.max_context_tokens = max_context_tokens
         self.local_llm = local_llm_client  # OllamaClient for free summarization
         self.logger = get_logging_system()
+        self._lock = threading.Lock()
         self._compaction_count = 0
 
     def _estimate_tokens(self, text: str) -> int:
@@ -77,30 +80,32 @@ class ContextCompactor:
 
         old_tokens = self._estimate_messages_tokens(old_turns)
         self.logger.info(
-            f"🗜️ ContextCompactor: Compacting {len(old_turns)} old turns "
+            f"?? ContextCompactor: Compacting {len(old_turns)} old turns "
             f"(~{old_tokens} tokens) into summary..."
         )
 
         # Generate summary
         summary = self._summarize_turns(old_turns)
-        self._compaction_count += 1
+        with self._lock:
+            self._compaction_count += 1
+            current_count = self._compaction_count
 
         # Build compacted context
         compacted_msg = {
             "role": "system",
             "content": (
-                f"[CONTEXT COMPACTION #{self._compaction_count}]\n"
+                f"[CONTEXT COMPACTION #{current_count}]\n"
                 f"The following is a condensed summary of {len(old_turns)} earlier turns "
                 f"in this conversation:\n\n{summary}\n\n"
-                f"[END COMPACTION — Recent conversation follows]"
+                f"[END COMPACTION ? Recent conversation follows]"
             ),
         }
 
         new_tokens = self._estimate_tokens(compacted_msg["content"])
         saved = old_tokens - new_tokens
         self.logger.info(
-            f"✅ ContextCompactor: Saved ~{saved} tokens "
-            f"({old_tokens} → {new_tokens}). "
+            f"? ContextCompactor: Saved ~{saved} tokens "
+            f"({old_tokens} ? {new_tokens}). "
             f"Compaction #{self._compaction_count}."
         )
 
@@ -141,7 +146,7 @@ class ContextCompactor:
                 return self.local_llm.generate_chat(summary_prompt)
             except Exception as e:
                 self.logger.warning(
-                    f"⚠️ ContextCompactor: LLM summarization failed ({e}), "
+                    f"?? ContextCompactor: LLM summarization failed ({e}), "
                     f"falling back to naive extraction."
                 )
 
@@ -157,12 +162,15 @@ class ContextCompactor:
             # Take only the first 100 chars of each turn
             snippet = content[:100] + ("..." if len(content) > 100 else "")
             if snippet:
-                lines.append(f"• [{role}]: {snippet}")
+                lines.append(f"? [{role}]: {snippet}")
         return "\n".join(lines[-10:])  # Keep last 10 snippets max
 
     def get_status(self) -> dict:
+        with self._lock:
+            count = self._compaction_count
+            
         return {
-            "compaction_count": self._compaction_count,
+            "compaction_count": count,
             "preserve_recent_turns": self.PRESERVE_RECENT_TURNS,
             "compaction_threshold_pct": self.COMPACTION_THRESHOLD * 100,
         }

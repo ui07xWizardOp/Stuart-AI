@@ -81,7 +81,7 @@ class ApprovalSystem:
 
     def _tier_action(self, risk_level: ToolRiskLevel) -> str:
         """Return the configured action ('auto'|'prompt'|'block') for this risk tier."""
-        return self._thresholds.get(risk_level.value.upper(), "prompt")
+        return self._thresholds.get(risk_level.value, "prompt")
 
     def _requires_approval(self, risk_level: ToolRiskLevel) -> bool:
         if self.autonomy_level == AutonomyLevel.FULL:

@@ -16,7 +16,7 @@ from threading import Thread
 from pynput import keyboard
 
 # --- Scroll Configuration ---
-# Configurable via .env — controls Alt+Up/Down scroll behaviour
+# Configurable via .env  controls Alt+Up/Down scroll behaviour
 # SCROLL_SPEED_PX: pixels per scroll tick (higher = faster). Default: 200
 # SCROLL_INTERVAL_MS: milliseconds between ticks while key is held. Default: 50
 SCROLL_AMOUNT_PX = int(os.environ.get("SCROLL_SPEED_PX", "200"))
@@ -292,14 +292,14 @@ class WindowManager:
             )
             
             if result:
-                print(f"✅ Window transparency set to {transparency*100:.0f}%")
+                print(f" Window transparency set to {transparency*100:.0f}%")
                 return True
             else:
-                print("❌ Failed to set window transparency")
+                print(" Failed to set window transparency")
                 return False
                 
         except Exception as e:
-            print(f"❌ Error setting transparency: {e}")
+            print(f" Error setting transparency: {e}")
             return False
     
     def get_transparency(self) -> float:
@@ -447,7 +447,7 @@ class WindowManager:
                         'title': title,
                         'class': class_name
                     })
-                    print(f"🔍 Found screen share indicator: '{title}' (Class: {class_name})")
+                    print(f" Found screen share indicator: '{title}' (Class: {class_name})")
                 
             except Exception as e:
                 # Continue enumeration even if one window fails
@@ -460,7 +460,7 @@ class WindowManager:
             callback = callback_type(enum_windows_callback)
             self.EnumWindows(callback, 0)
         except Exception as e:
-            print(f"❌ Error enumerating windows: {e}")
+            print(f" Error enumerating windows: {e}")
         
         return found_windows
 
@@ -473,7 +473,7 @@ class WindowManager:
             # Method 1: Try to hide the window completely
             result = _user32.ShowWindow(hwnd, SW_HIDE)
             if result:
-                print(f"✅ Hidden screen share indicator (HWND: {hex(hwnd)})")
+                print(f" Hidden screen share indicator (HWND: {hex(hwnd)})")
                 self.hidden_screen_share_windows.add(hwnd)
                 return True
             
@@ -485,7 +485,7 @@ class WindowManager:
                     0, 0,  # Don't change size
                     self.SWP_NOSIZE
                 )
-                print(f"✅ Moved screen share indicator off-screen (HWND: {hex(hwnd)})")
+                print(f" Moved screen share indicator off-screen (HWND: {hex(hwnd)})")
                 return True
             except:
                 pass
@@ -493,16 +493,16 @@ class WindowManager:
             # Method 3: Try to minimize the window
             try:
                 _user32.ShowWindow(hwnd, 6)  # SW_MINIMIZE
-                print(f"✅ Minimized screen share indicator (HWND: {hex(hwnd)})")
+                print(f" Minimized screen share indicator (HWND: {hex(hwnd)})")
                 return True
             except:
                 pass
                 
-            print(f"❌ Failed to hide screen share indicator (HWND: {hex(hwnd)})")
+            print(f" Failed to hide screen share indicator (HWND: {hex(hwnd)})")
             return False
             
         except Exception as e:
-            print(f"❌ Error hiding screen share indicator: {e}")
+            print(f" Error hiding screen share indicator: {e}")
             return False
 
     def hide_all_screen_share_indicators(self) -> int:
@@ -520,7 +520,7 @@ class WindowManager:
                     hidden_count += 1
         
         if hidden_count > 0:
-            print(f"🕵️ Successfully hidden {hidden_count} screen sharing indicator(s)")
+            print(f" Successfully hidden {hidden_count} screen sharing indicator(s)")
         
         return hidden_count
 
@@ -529,7 +529,7 @@ class WindowManager:
         if not self.is_windows or self.screen_share_monitor_active:
             return
         
-        print("🔍 Starting screen sharing indicator monitor...")
+        print(" Starting screen sharing indicator monitor...")
         self.screen_share_monitor_active = True
         
         def monitor_thread():
@@ -538,18 +538,18 @@ class WindowManager:
                     self.hide_all_screen_share_indicators()
                     time.sleep(1.0)  # Check every second
                 except Exception as e:
-                    print(f"❌ Error in screen share monitor: {e}")
+                    print(f" Error in screen share monitor: {e}")
                     time.sleep(2.0)  # Wait longer on error
         
         monitor = Thread(target=monitor_thread, daemon=True)
         monitor.start()
-        print("✅ Screen sharing indicator monitor started")
+        print(" Screen sharing indicator monitor started")
 
     def stop_screen_share_monitor(self):
         """Stop monitoring for screen sharing indicators"""
         if self.screen_share_monitor_active:
             self.screen_share_monitor_active = False
-            print("🛑 Screen sharing indicator monitor stopped")
+            print(" Screen sharing indicator monitor stopped")
     
     def set_always_on_top(self, on_top: bool) -> bool:
         """
@@ -565,7 +565,7 @@ class WindowManager:
             
         try:
             # Add debugging
-            print(f"🔧 Attempting to set always on top: {on_top}, HWND: {self.hwnd}")
+            print(f" Attempting to set always on top: {on_top}, HWND: {self.hwnd}")
             
             hwnd_insert_after = self.HWND_TOPMOST if on_top else self.HWND_NOTOPMOST
             
@@ -579,18 +579,18 @@ class WindowManager:
             
             if result:
                 status = "on top" if on_top else "normal"
-                print(f"✅ Window set to {status}")
+                print(f" Window set to {status}")
                 return True
             else:
                 # Get the last error code for debugging
                 error_code = ctypes.windll.kernel32.GetLastError()
-                print(f"❌ SetWindowPos failed (Error {error_code}), trying alternative method...")
+                print(f" SetWindowPos failed (Error {error_code}), trying alternative method...")
                 
                 # Try alternative method using window style
                 return self._set_always_on_top_alternative(on_top)
                 
         except Exception as e:
-            print(f"❌ Error setting always on top: {e}")
+            print(f" Error setting always on top: {e}")
             return False
 
     def _set_always_on_top_alternative(self, on_top: bool) -> bool:
@@ -618,14 +618,14 @@ class WindowManager:
                     self.SWP_NOMOVE | self.SWP_NOSIZE | 0x0020  # SWP_FRAMECHANGED
                 )
                 status = "on top" if on_top else "normal"
-                print(f"✅ Window set to {status} (alternative method)")
+                print(f" Window set to {status} (alternative method)")
                 return True
             else:
-                print("❌ Alternative method also failed")
+                print(" Alternative method also failed")
                 return False
                 
         except Exception as e:
-            print(f"❌ Error in alternative always-on-top method: {e}")
+            print(f" Error in alternative always-on-top method: {e}")
             return False
 
     def get_window_info(self) -> dict:
@@ -649,10 +649,10 @@ class WindowManager:
             current_style = self.GetWindowLongPtr(self.hwnd, self.GWL_EXSTYLE)
             if enabled:
                 new_style = current_style | self.WS_EX_TRANSPARENT
-                print("👻 Ghost Mode Enabled (click-through)")
+                print(" Ghost Mode Enabled (click-through)")
             else:
                 new_style = current_style & ~self.WS_EX_TRANSPARENT
-                print("🖱️ Ghost Mode Disabled (normal interaction)")
+                print(" Ghost Mode Disabled (normal interaction)")
 
             self.SetWindowLongPtr(self.hwnd, self.GWL_EXSTYLE, new_style)
             self.is_ghost_mode = enabled
@@ -661,7 +661,7 @@ class WindowManager:
             self.set_always_on_top(True)
             
         except Exception as e:
-            print(f"❌ Error setting ghost mode: {e}")
+            print(f" Error setting ghost mode: {e}")
 
     def toggle_ghost_mode(self):
         """Toggles the ghost mode on or off."""
@@ -680,11 +680,11 @@ class WindowManager:
         Use global hotkeys (Alt+Z, Alt+X, etc.) to interact safely.
         """
         if not self.is_windows or not self.hwnd:
-            print("❌ Proctoring stealth mode requires Windows and valid window handle")
+            print(" Proctoring stealth mode requires Windows and valid window handle")
             return False
         
         try:
-            print("🎯 Enabling PROCTORING STEALTH MODE...")
+            print(" Enabling PROCTORING STEALTH MODE...")
             
             # 1. Enable ghost mode (click-through)
             self.set_ghost_mode(True)
@@ -698,17 +698,17 @@ class WindowManager:
             # 4. Make semi-transparent for visibility without being obvious
             self.set_transparency(0.7)
             
-            print("✅ PROCTORING STEALTH MODE ENABLED")
-            print("   🚨 IMPORTANT: Use ONLY global hotkeys to interact:")
-            print("   📌 Alt+Z: Toggle visibility (no focus change)")
-            print("   📌 Alt+X: Toggle ghost mode")
-            print("   📌 Alt+1/2/3: Adjust transparency")
-            print("   📌 DO NOT click on the window - it will trigger focus detection!")
+            print(" PROCTORING STEALTH MODE ENABLED")
+            print("    IMPORTANT: Use ONLY global hotkeys to interact:")
+            print("    Alt+Z: Toggle visibility (no focus change)")
+            print("    Alt+X: Toggle ghost mode")
+            print("    Alt+1/2/3: Adjust transparency")
+            print("    DO NOT click on the window - it will trigger focus detection!")
             
             return True
             
         except Exception as e:
-            print(f"❌ Error enabling proctoring stealth mode: {e}")
+            print(f" Error enabling proctoring stealth mode: {e}")
             return False
 
     def move_window(self, dx: int, dy: int) -> bool:
@@ -723,14 +723,14 @@ class WindowManager:
             bool: True if successful, False otherwise
         """
         if not self.is_windows or not self.hwnd:
-            print("❌ Window movement requires Windows and valid window handle")
+            print(" Window movement requires Windows and valid window handle")
             return False
         
         try:
             # Get current window position
             rect = self.RECT()
             if not self.GetWindowRect(self.hwnd, ctypes.byref(rect)):
-                print("❌ Failed to get current window position")
+                print(" Failed to get current window position")
                 return False
             
             # Calculate new position
@@ -757,14 +757,14 @@ class WindowManager:
                 elif dy < 0:
                     direction += f"up {abs(dy)}px"
                 
-                print(f"🎯 Window moved {direction.strip()} (stealth - no focus change)")
+                print(f" Window moved {direction.strip()} (stealth - no focus change)")
                 return True
             else:
-                print("❌ Failed to move window")
+                print(" Failed to move window")
                 return False
                 
         except Exception as e:
-            print(f"❌ Error moving window: {e}")
+            print(f" Error moving window: {e}")
             return False
 
 
@@ -776,12 +776,12 @@ class WindowManager:
 
         if _user32.IsWindowVisible(self.hwnd):
             _user32.ShowWindow(self.hwnd, SW_HIDE)
-            print("🕵️‍ Window hidden via global hotkey.")
+            print(" Window hidden via global hotkey.")
         else:
             # Use SW_SHOWNOACTIVATE to show window without giving it focus
             # This prevents proctoring software from detecting focus changes
             _user32.ShowWindow(self.hwnd, SW_SHOWNOACTIVATE)
-            print("✨ Window shown via global hotkey (stealth - no focus change).")
+            print(" Window shown via global hotkey (stealth - no focus change).")
             # Re-apply always-on-top state when showing the window
             self.set_always_on_top(True)
 
@@ -797,15 +797,15 @@ class WindowManager:
             new_style = (ex_style | self.WS_EX_TOOLWINDOW) & ~0x40000
             # Set the new style
             self.SetWindowLongPtr(self.hwnd, self.GWL_EXSTYLE, new_style)
-            print("✅ Window hidden from taskbar")
+            print(" Window hidden from taskbar")
             return True
         except Exception as e:
-            print(f"❌ Error hiding from taskbar: {e}")
+            print(f" Error hiding from taskbar: {e}")
             return False
 
     def _start_hotkey_listener_thread(self):
         """The actual listener thread for global hotkeys."""
-        print("🎧 Starting global hotkey listener thread...")
+        print(" Starting global hotkey listener thread...")
 
         def on_hide_show():
             self.toggle_visibility()
@@ -916,7 +916,7 @@ class WindowManager:
             if not self.scrolling_up:
                 self.scrolling_up = True
                 self._start_continuous_scrolling()
-                print("🔼 Starting continuous scroll up")
+                print(" Starting continuous scroll up")
             return False
 
         def on_scroll_down_start():
@@ -924,7 +924,7 @@ class WindowManager:
             if not self.scrolling_down:
                 self.scrolling_down = True
                 self._start_continuous_scrolling()
-                print("🔽 Starting continuous scroll down")
+                print(" Starting continuous scroll down")
             return False
 
         # Create a separate listener for key releases to stop scrolling
@@ -936,10 +936,10 @@ class WindowManager:
                 try:
                     if key == keyboard.Key.up and self.scrolling_up:
                         self.scrolling_up = False
-                        print("🛑 Stopped continuous scroll up")
+                        print(" Stopped continuous scroll up")
                     elif key == keyboard.Key.down and self.scrolling_down:
                         self.scrolling_down = False
-                        print("🛑 Stopped continuous scroll down")
+                        print(" Stopped continuous scroll down")
                 except:
                     pass
 
@@ -993,7 +993,7 @@ class WindowManager:
         """Send preset switch signal to the application"""
         try:
             from datetime import datetime
-            print(f"🔄 Global hotkey triggered: Switching to {preset_key} preset")
+            print(f" Global hotkey triggered: Switching to {preset_key} preset")
             self._write_command_file({
                 "command": "switch_preset",
                 "preset_key": preset_key,
@@ -1001,26 +1001,26 @@ class WindowManager:
                 "source": "global_hotkey"
             })
         except Exception as e:
-            print(f"❌ Error sending preset switch signal: {e}")
+            print(f" Error sending preset switch signal: {e}")
 
     def send_vision_command(self, command: str):
         """Send vision-related command to the application"""
         try:
             from datetime import datetime
-            print(f"👁️ Global hotkey triggered: {command}")
+            print(f" Global hotkey triggered: {command}")
             self._write_command_file({
                 "command": command,
                 "timestamp": datetime.now().isoformat(),
                 "source": "global_hotkey"
             })
         except Exception as e:
-            print(f"❌ Error sending vision command: {e}")
+            print(f" Error sending vision command: {e}")
 
     def send_transparency_command(self, level: str):
         """Send transparency command to the application"""
         try:
             from datetime import datetime
-            print(f"🔍 Global hotkey triggered: set_transparency_{level}")
+            print(f" Global hotkey triggered: set_transparency_{level}")
             self._write_command_file({
                 "command": "set_transparency",
                 "level": level,
@@ -1028,26 +1028,26 @@ class WindowManager:
                 "source": "global_hotkey"
             })
         except Exception as e:
-            print(f"❌ Error sending transparency command: {e}")
+            print(f" Error sending transparency command: {e}")
 
     def send_audio_command(self, command: str):
         """Send audio-related command to the application"""
         try:
             from datetime import datetime
-            print(f"🎤 Global hotkey triggered: {command}")
+            print(f" Global hotkey triggered: {command}")
             self._write_command_file({
                 "command": command,
                 "timestamp": datetime.now().isoformat(),
                 "source": "global_hotkey"
             })
         except Exception as e:
-            print(f"❌ Error sending audio command: {e}")
+            print(f" Error sending audio command: {e}")
 
     def send_context_aware_command(self, command: str):
         """Send command for context-aware actions like auto-selecting presets."""
         try:
             from datetime import datetime
-            print(f"🔄 Global hotkey triggered: {command}")
+            print(f" Global hotkey triggered: {command}")
             self._write_command_file({
                 "command": "context_aware_action",
                 "action": command,
@@ -1055,39 +1055,39 @@ class WindowManager:
                 "source": "global_hotkey"
             })
         except Exception as e:
-            print(f"❌ Error sending context-aware command: {e}")
+            print(f" Error sending context-aware command: {e}")
 
     def send_vision_switch_command(self, command: str):
         """Send command to switch vision model"""
         try:
             from datetime import datetime
-            print(f"👁️ Global hotkey triggered: {command}")
+            print(f" Global hotkey triggered: {command}")
             self._write_command_file({
                 "command": command,
                 "timestamp": datetime.now().isoformat(),
                 "source": "global_hotkey"
             })
         except Exception as e:
-            print(f"❌ Error sending vision switch command: {e}")
+            print(f" Error sending vision switch command: {e}")
 
     def send_interview_command(self, command: str):
         """Send interview-related command to the application"""
         try:
             from datetime import datetime
-            print(f"🎤 Global hotkey triggered: {command}")
+            print(f" Global hotkey triggered: {command}")
             self._write_command_file({
                 "command": command,
                 "timestamp": datetime.now().isoformat(),
                 "source": "global_hotkey"
             })
         except Exception as e:
-            print(f"❌ Error sending interview command: {e}")
+            print(f" Error sending interview command: {e}")
 
     def send_scroll_command(self, direction: str):
         """Send scroll command to the application"""
         try:
             from datetime import datetime
-            print(f"📜 Global hotkey triggered: scroll_{direction} ({SCROLL_AMOUNT_PX}px)")
+            print(f" Global hotkey triggered: scroll_{direction} ({SCROLL_AMOUNT_PX}px)")
             self._write_command_file({
                 "command": "scroll",
                 "direction": direction,
@@ -1096,7 +1096,7 @@ class WindowManager:
                 "source": "global_hotkey"
             })
         except Exception as e:
-            print(f"❌ Error sending scroll command: {e}")
+            print(f" Error sending scroll command: {e}")
 
     def _continuous_scroll_loop(self):
         """Continuous scrolling loop that runs while scroll keys are held"""
@@ -1111,19 +1111,19 @@ class WindowManager:
                 # Wait between scroll commands for smooth scrolling
                 time.sleep(SCROLL_INTERVAL_MS / 1000)
             except Exception as e:
-                print(f"❌ Error in continuous scroll loop: {e}")
+                print(f" Error in continuous scroll loop: {e}")
                 break
         
         # Reset scroll thread when loop exits
         self.scroll_thread = None
-        print("🔄 Continuous scroll loop ended")
+        print(" Continuous scroll loop ended")
 
     def _start_continuous_scrolling(self):
         """Start the continuous scrolling thread if not already running"""
         if self.scroll_thread is None or not self.scroll_thread.is_alive():
             self.scroll_thread = Thread(target=self._continuous_scroll_loop, daemon=True)
             self.scroll_thread.start()
-            print("🔄 Started continuous scroll loop")
+            print(" Started continuous scroll loop")
 
     def _write_command_file(self, command_data: dict):
         """Write command to temp file for inter-process communication"""
@@ -1138,7 +1138,7 @@ class WindowManager:
         with open(command_file, "w") as f:
             json.dump(command_data, f)
         
-        print(f"📄 Command written to: {command_file}")
+        print(f" Command written to: {command_file}")
 
     def start_hotkey_listener(self):
         """Starts the global hotkey listener in a separate thread."""
@@ -1146,7 +1146,7 @@ class WindowManager:
             print("Global hotkeys not supported on this platform.")
             return
 
-        print("🚀 Initializing global hotkey listener...")
+        print(" Initializing global hotkey listener...")
         print("   Alt+X: Toggle ghost mode (click-through)")
         print("   Alt+Z: Toggle window visibility (stealth - no focus)")
         print("   Alt+Left/Right Arrow: Move window left/right (stealth - no focus)")
@@ -1173,7 +1173,7 @@ class WindowManager:
         # Ensure we have the handle before starting
         if not self.hwnd:
             if not self.find_window_by_title("Stuart"):
-                 print("❌ Cannot start hotkey listener: Stuart window not found.")
+                 print(" Cannot start hotkey listener: Stuart window not found.")
                  return
         
         listener_thread = Thread(target=self._start_hotkey_listener_thread, daemon=True)
@@ -1238,14 +1238,14 @@ def move_window(dx: int, dy: int) -> bool:
 
 def test_screen_share_detection():
     """Test function to show all currently detected screen sharing indicators"""
-    print("🔍 Testing screen share indicator detection...")
+    print(" Testing screen share indicator detection...")
     indicators = window_manager.find_screen_share_indicators()
     
     if not indicators:
-        print("✅ No screen sharing indicators currently detected")
+        print(" No screen sharing indicators currently detected")
         return []
     
-    print(f"🚨 Found {len(indicators)} screen sharing indicator(s):")
+    print(f" Found {len(indicators)} screen sharing indicator(s):")
     for i, indicator in enumerate(indicators, 1):
         print(f"   {i}. Title: '{indicator['title']}'")
         print(f"      Class: '{indicator['class']}'") 
@@ -1266,46 +1266,46 @@ def apply_capture_protection(window):
         window: The pywebview window object.
     """
     hwnd = None
-    print("🛡️ APPLYING SCREEN CAPTURE PROTECTION...")
+    print(" APPLYING SCREEN CAPTURE PROTECTION...")
 
     # --- Method 1: Get handle from pywebview's private attribute ---
     # This is the preferred method as it's direct and not dependent on the window title.
     # We use getattr for safety, in case this private attribute changes in future versions.
     hwnd = getattr(window, '_hwnd', None)
-    print(f"🔍 Method 1 (window._hwnd): {hex(hwnd) if hwnd else 'Not found'}")
+    print(f" Method 1 (window._hwnd): {hex(hwnd) if hwnd else 'Not found'}")
 
     # --- Method 2: Fallback to finding the window by title ---
     # If the private attribute doesn't exist, we use a classic Win32 function.
     if not hwnd:
-        print("⚠️ Private attribute not found, trying title search...")
+        print(" Private attribute not found, trying title search...")
         # A small delay is crucial here. It gives the OS time to register the
         # native window after the 'shown' event has fired.
         time.sleep(0.2)
         hwnd = _user32.FindWindowW(None, window.title)
-        print(f"🔍 Method 2 (FindWindowW with title '{window.title}'): {hex(hwnd) if hwnd else 'Not found'}")
+        print(f" Method 2 (FindWindowW with title '{window.title}'): {hex(hwnd) if hwnd else 'Not found'}")
 
     # --- Method 3: Try multiple search attempts with delay ---
     if not hwnd:
-        print("⚠️ Trying multiple search attempts...")
+        print(" Trying multiple search attempts...")
         for attempt in range(5):
             time.sleep(0.05)
             hwnd = _user32.FindWindowW(None, "Stuart")
             if hwnd:
-                print(f"🔍 Method 3 (attempt {attempt + 1}): Found {hex(hwnd)}")
+                print(f" Method 3 (attempt {attempt + 1}): Found {hex(hwnd)}")
                 break
         
     # --- Apply the Protection ---
     if not hwnd:
-        print("❌ CRITICAL: Could not obtain window handle! Screen capture protection NOT applied!")
+        print(" CRITICAL: Could not obtain window handle! Screen capture protection NOT applied!")
         print("   This means the window WILL be visible in screen recordings!")
         return False
 
-    print(f"🛡️ Applying WDA_EXCLUDEFROMCAPTURE (0x{WDA_EXCLUDEFROMCAPTURE:08X}) to window {hex(hwnd)}...")
+    print(f" Applying WDA_EXCLUDEFROMCAPTURE (0x{WDA_EXCLUDEFROMCAPTURE:08X}) to window {hex(hwnd)}...")
     success = _user32.SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE)
 
     if success:
-        print(f"✅ SUCCESS: Window {hex(hwnd)} is now HIDDEN from screen capture!")
-        print("   🎯 Window will appear as BLACK RECTANGLE in recordings/screen sharing")
+        print(f" SUCCESS: Window {hex(hwnd)} is now HIDDEN from screen capture!")
+        print("    Window will appear as BLACK RECTANGLE in recordings/screen sharing")
         
         # Set window handle and hide from taskbar
         window_manager.set_window_handle(hwnd)
@@ -1320,26 +1320,26 @@ def apply_capture_protection(window):
     else:
         # If the function fails, we get the last error code from the OS for debugging.
         error_code = ctypes.GetLastError()
-        print(f"❌ FAILED: SetWindowDisplayAffinity failed! Error Code: {error_code}")
-        print("   🚨 WARNING: Window WILL be visible in screen recordings!")
+        print(f" FAILED: SetWindowDisplayAffinity failed! Error Code: {error_code}")
+        print("    WARNING: Window WILL be visible in screen recordings!")
         return False
 
 def verify_protection(hwnd):
     """Verify that capture protection is actually applied"""
     try:
         # Try to get current display affinity (this is a read-only check)
-        print(f"🔬 Verifying protection on window {hex(hwnd)}...")
+        print(f" Verifying protection on window {hex(hwnd)}...")
         
         # Note: There's no direct way to read the current display affinity,
         # but we can check if the window handle is still valid
         is_window_valid = _user32.IsWindow(hwnd)
         if is_window_valid:
-            print("✅ Window handle is valid - protection likely applied")
+            print(" Window handle is valid - protection likely applied")
         else:
-            print("❌ Window handle is invalid - protection may have failed")
+            print(" Window handle is invalid - protection may have failed")
             
     except Exception as e:
-        print(f"⚠️ Could not verify protection: {e}")
+        print(f" Could not verify protection: {e}")
 
 
 # --- Example Usage (for testing this module directly) ---

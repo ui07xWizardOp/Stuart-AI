@@ -26,6 +26,9 @@ class AgentChat {
     }
 
     init() {
+        if (this.initialized) return;
+        this.initialized = true;
+
         this.messagesContainer = document.getElementById('agent-messages');
         this.inputField = document.getElementById('agent-input');
         this.sendBtn = document.getElementById('agent-send-btn');
@@ -63,8 +66,8 @@ class AgentChat {
             btn.addEventListener('click', () => this.setAutonomy(btn.dataset.level));
         });
 
-        // Mode toggle (Final/Focus)
-        document.querySelectorAll('.mode-toggle-btn').forEach(btn => {
+        // Mode toggle (Final/Focus) - narrowed to avoid collision with main nav
+        document.querySelectorAll('.mode-toggle-inline .mode-toggle-btn').forEach(btn => {
             btn.addEventListener('click', () => this.setMode(btn.dataset.mode));
         });
 
@@ -304,7 +307,7 @@ class AgentChat {
         const isFocus = mode === 'focus';
         container.classList.toggle('focus-mode', isFocus);
 
-        document.querySelectorAll('.mode-toggle-btn').forEach(btn => {
+        document.querySelectorAll('.mode-toggle-inline .mode-toggle-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.mode === mode);
         });
     }

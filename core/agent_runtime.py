@@ -21,7 +21,7 @@ from observability import (
     CorrelationContext,
     get_correlation_id
 )
-from events import get_event_bus, EventType
+from events import get_event_bus, EventType, Event
 
 
 class RuntimeState(str, Enum):
@@ -177,7 +177,12 @@ class AgentRuntime:
         self.logger = get_logging_system()
         self.tracing = get_tracing_system()
         self.event_bus = get_event_bus()
-        self.db = get_db_connection() if enable_state_persistence else None
+        try:
+            self.db = get_db_connection() if enable_state_persistence else None
+        except RuntimeError as e:
+            self.logger.warning(f"Database connection not available: {e}. Disabling state persistence.")
+            self.db = None
+            self.enable_state_persistence = False
         
         # Runtime state
         self.current_context: Optional[RuntimeContext] = None
@@ -237,15 +242,18 @@ class AgentRuntime:
                     self.current_context = context
                     
                     # Publish task started event
-                    self.event_bus.publish(
-                        EventType.TASK_STARTED,
-                        data={
+                    self.event_bus.publish(Event.create(
+                        event_type=EventType.TASK_STARTED,
+                        payload={
                             "task_id": task_id,
                             "user_id": user_id,
                             "command": command
                         },
+                        source_component="agent_runtime",
+                        trace_id=self.tracing.get_current_trace_id() or "no-trace",
+                        correlation_id=get_correlation_id() or "no-correlation",
                         workflow_id=task_id
-                    )
+                    ))
                     
                     # Execute reasoning loop
                     result = self._reasoning_loop(context)
@@ -260,16 +268,19 @@ class AgentRuntime:
                         self._persist_state(context)
                     
                     # Publish task completed event
-                    self.event_bus.publish(
-                        EventType.TASK_COMPLETED,
-                        data={
+                    self.event_bus.publish(Event.create(
+                        event_type=EventType.TASK_COMPLETED,
+                        payload={
                             "task_id": task_id,
                             "result": result,
                             "iterations": context.budget.iterations_used,
                             "duration_seconds": context.budget.execution_time_seconds
                         },
+                        source_component="agent_runtime",
+                        trace_id=self.tracing.get_current_trace_id() or "no-trace",
+                        correlation_id=get_correlation_id() or "no-correlation",
                         workflow_id=task_id
-                    )
+                    ))
                     
                     self.logger.info(
                         "Task completed successfully",
@@ -302,15 +313,18 @@ class AgentRuntime:
                             self._persist_state(self.current_context)
                     
                     # Publish task failed event
-                    self.event_bus.publish(
-                        EventType.TASK_FAILED,
-                        data={
+                    self.event_bus.publish(Event.create(
+                        event_type=EventType.TASK_FAILED,
+                        payload={
                             "task_id": task_id,
                             "error": str(e),
                             "error_type": type(e).__name__
                         },
+                        source_component="agent_runtime",
+                        trace_id=self.tracing.get_current_trace_id() or "no-trace",
+                        correlation_id=get_correlation_id() or "no-correlation",
                         workflow_id=task_id
-                    )
+                    ))
                     
                     span.tags["error"] = True
                     span.tags["error_message"] = str(e)
@@ -365,8 +379,28 @@ class AgentRuntime:
         """
         self.logger.info("Starting reasoning loop", task_id=context.task_id)
         
+        if not hasattr(self, "orchestrator") or not self.orchestrator:
+            raise RuntimeError("Orchestrator not initialized in AgentRuntime")
+            
         context.state = RuntimeState.REASONING
-        iteration_start_time = time.time()
+        start_time = time.time()
+        
+        # Prepare toolset for the task
+        if self.orchestrator.toolset_distributor:
+            schema_array = self.orchestrator.toolset_distributor.get_tools_for_task(context.command)
+        else:
+            schema_array = [t.get_metadata() for t in self.orchestrator.executor.registry.get_all_tools()]
+            
+        # Prepare plan injection
+        known_plan_injection = ""
+        if self.orchestrator.plan_library:
+            plan = self.orchestrator.plan_library.lookup_plan(context.command)
+            if plan:
+                known_plan_injection = f"\n<PROVEN_PLAN>\n{plan}\n</PROVEN_PLAN>\n"
+        
+        last_tool_call_signature = None
+        consecutive_errors = 0
+        reflection_active = False
         
         while not context.budget.is_exhausted():
             # Check for cancellation
@@ -388,23 +422,75 @@ class AgentRuntime:
             
             with self.tracing.start_span(f"reasoning_iteration_{iteration_num}") as span:
                 span.tags["iteration"] = iteration_num
-                span.tags["task_id"] = context.task_id
                 
-                # TODO: Implement actual reasoning logic
-                # This will be implemented when we add the Orchestrator
-                # For now, simulate completion
-                result = {"status": "completed", "message": "Task executed successfully"}
+                # EXECUTE ONE STEP
+                result = self.orchestrator.run_reasoning_step(
+                    text=context.command,
+                    schema_array=schema_array,
+                    known_plan_injection=known_plan_injection,
+                    last_tool_call_signature=last_tool_call_signature,
+                    consecutive_errors=consecutive_errors,
+                    budget=context.budget.max_iterations
+                )
+                
+                # Handle Model Results
+                if result.is_final:
+                    # Record successful plan if no errors
+                    if consecutive_errors == 0 and self.orchestrator.plan_library:
+                        # Accessing private attr for now as it's part of the same system
+                        self.orchestrator.plan_library.record_successful_plan(
+                            context.command, 
+                            getattr(self.orchestrator, "_current_loop_tools", [])
+                        )
+                    return result.answer
+                
+                if result.error and not result.observation:
+                    raise RuntimeError(result.error)
+                
+                # Handle tool call signatures for loop detection
+                if result.tool_call:
+                    import json
+                    tool_name = result.tool_call.get("tool")
+                    action = result.tool_call.get("action")
+                    params = result.tool_call.get("parameters", {})
+                    last_tool_call_signature = f"{tool_name}:{action}:{hash(json.dumps(params, sort_keys=True))}"
+                    
+                    # Update tool call count
+                    context.budget.tool_calls_used += 1
+                    
+                    if "Execution Result from" in (result.observation or ""):
+                        consecutive_errors = 0
+                    else:
+                        consecutive_errors += 1
+                else:
+                    consecutive_errors += 1
+                
+                # Update LLM call count
+                context.budget.llm_calls_used += 1
+                
+                # --- Task 6.4: Reflection Step ---
+                if self.enable_reflection and consecutive_errors >= 2 and not reflection_active:
+                    self.logger.warning("Agent stuck. Triggering reflection step.", task_id=context.task_id)
+                    reflection_active = True
+                    context.state = RuntimeState.REFLECTING
+                    
+                    reflection_msg = (
+                        "SYSTEM REFLECTION: You have encountered multiple consecutive errors or non-standard responses. "
+                        "Stop and re-evaluate your current approach. Is there a simpler tool or a different way to achieve the goal? "
+                        "Explain your new strategy in your next thought."
+                    )
+                    from memory.short_term import MemoryRole
+                    self.orchestrator.memory.commit_interaction(MemoryRole.SYSTEM, reflection_msg)
+                elif reflection_active and consecutive_errors == 0:
+                    reflection_active = False
+                    context.state = RuntimeState.REASONING
                 
                 # Update execution time
-                context.budget.execution_time_seconds = time.time() - iteration_start_time
+                context.budget.execution_time_seconds = time.time() - start_time
                 
                 # Persist state after each iteration
                 if self.enable_state_persistence:
                     self._persist_state(context)
-                
-                # Check if task is complete
-                # TODO: Implement completion check logic
-                return result
         
         # Budget exhausted
         self.logger.warning(
@@ -413,6 +499,7 @@ class AgentRuntime:
             budget_used=context.budget.to_dict()
         )
         raise RuntimeError("Reasoning budget exhausted")
+
     
     def _persist_state(self, context: RuntimeContext) -> None:
         """Persist runtime state to database"""

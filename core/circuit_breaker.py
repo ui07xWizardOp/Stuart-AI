@@ -1,9 +1,9 @@
 """
-Circuit Breaker Pattern (Phase 9A — Hardening Sprint)
+Circuit Breaker Pattern (Phase 9A ? Hardening Sprint)
 
 Inspired by CheetahClaws / Netflix Hystrix.
 Wraps LLM provider calls with fault-tolerance states:
-  CLOSED (healthy) → OPEN (tripped, fast-fail) → HALF_OPEN (testing recovery)
+  CLOSED (healthy) ? OPEN (tripped, fast-fail) ? HALF_OPEN (testing recovery)
 
 Prevents cascade failures when Ollama goes offline or Cloud API rate-limits.
 """
@@ -16,9 +16,9 @@ from observability import get_logging_system
 
 
 class CircuitState(str, Enum):
-    CLOSED = "closed"       # Healthy — requests flow through
-    OPEN = "open"           # Tripped — fast-fail all requests
-    HALF_OPEN = "half_open" # Testing — allow one probe request
+    CLOSED = "closed"       # Healthy ? requests flow through
+    OPEN = "open"           # Tripped ? fast-fail all requests
+    HALF_OPEN = "half_open" # Testing ? allow one probe request
 
 
 class CircuitBreaker:
@@ -57,7 +57,7 @@ class CircuitBreaker:
                 if self._last_failure_time and (time.time() - self._last_failure_time) >= self.recovery_timeout:
                     self._state = CircuitState.HALF_OPEN
                     self._half_open_calls = 0
-                    self.logger.info(f"⚡ CircuitBreaker[{self.name}]: OPEN → HALF_OPEN (recovery window)")
+                    self.logger.info(f"? CircuitBreaker[{self.name}]: OPEN ? HALF_OPEN (recovery window)")
             return self._state
 
     def call(self, func: Callable[..., Any], *args, **kwargs) -> Any:
@@ -70,7 +70,7 @@ class CircuitBreaker:
         if current_state == CircuitState.OPEN:
             raise CircuitOpenError(
                 f"CircuitBreaker[{self.name}] is OPEN. "
-                f"Provider offline — {self.failure_threshold} consecutive failures. "
+                f"Provider offline ? {self.failure_threshold} consecutive failures. "
                 f"Will retry in {self._time_until_recovery():.0f}s."
             )
 
@@ -78,7 +78,7 @@ class CircuitBreaker:
             with self._lock:
                 if self._half_open_calls >= self.half_open_max_calls:
                     raise CircuitOpenError(
-                        f"CircuitBreaker[{self.name}] is HALF_OPEN — probe already in-flight."
+                        f"CircuitBreaker[{self.name}] is HALF_OPEN ? probe already in-flight."
                     )
                 self._half_open_calls += 1
 
@@ -92,31 +92,31 @@ class CircuitBreaker:
             raise
 
     def _on_success(self):
-        """Record a successful call — reset the breaker."""
+        """Record a successful call ? reset the breaker."""
         with self._lock:
             if self._state == CircuitState.HALF_OPEN:
-                self.logger.info(f"✅ CircuitBreaker[{self.name}]: HALF_OPEN → CLOSED (provider recovered)")
+                self.logger.info(f"? CircuitBreaker[{self.name}]: HALF_OPEN ? CLOSED (provider recovered)")
             self._state = CircuitState.CLOSED
             self._failure_count = 0
             self._last_failure_time = None
 
     def _on_failure(self, error: Exception):
-        """Record a failed call — potentially trip the breaker."""
+        """Record a failed call ? potentially trip the breaker."""
         with self._lock:
             self._failure_count += 1
             self._last_failure_time = time.time()
 
             if self._state == CircuitState.HALF_OPEN:
-                # Probe failed — back to OPEN
+                # Probe failed ? back to OPEN
                 self._state = CircuitState.OPEN
                 self.logger.warning(
-                    f"🔴 CircuitBreaker[{self.name}]: HALF_OPEN → OPEN "
+                    f"? CircuitBreaker[{self.name}]: HALF_OPEN ? OPEN "
                     f"(probe failed: {error})"
                 )
             elif self._failure_count >= self.failure_threshold:
                 self._state = CircuitState.OPEN
                 self.logger.error(
-                    f"🔴 CircuitBreaker[{self.name}]: CLOSED → OPEN "
+                    f"? CircuitBreaker[{self.name}]: CLOSED ? OPEN "
                     f"({self._failure_count} consecutive failures). "
                     f"Provider quarantined for {self.recovery_timeout}s."
                 )
@@ -128,12 +128,12 @@ class CircuitBreaker:
         return max(0.0, self.recovery_timeout - elapsed)
 
     def force_reset(self):
-        """Manual reset — for operator override."""
+        """Manual reset ? for operator override."""
         with self._lock:
             self._state = CircuitState.CLOSED
             self._failure_count = 0
             self._last_failure_time = None
-            self.logger.info(f"🔧 CircuitBreaker[{self.name}]: Force reset to CLOSED")
+            self.logger.info(f"? CircuitBreaker[{self.name}]: Force reset to CLOSED")
 
     def get_status(self) -> dict:
         """Return breaker status for health monitoring / API exposure."""

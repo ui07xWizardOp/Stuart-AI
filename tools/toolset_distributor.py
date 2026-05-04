@@ -21,13 +21,13 @@ from observability import get_logging_system
 from tools.registry import ToolRegistry
 
 
-# Task type → list of tool names that are relevant
+# Task type ? list of tool names that are relevant
 DEFAULT_DISTRIBUTIONS: Dict[str, List[str]] = {
     "coding": ["python_executor", "file_manager"],
     "file_ops": ["file_manager"],
     "research": ["api_caller"],
     "api": ["api_caller"],
-    "general": [],  # Empty means "all tools" — acts as fallback
+    "general": [],  # Empty means "all tools" ? acts as fallback
 }
 
 # Keyword patterns for classification
@@ -114,7 +114,7 @@ class ToolsetDistributor:
             # Fallback: return all tools
             all_tools = self.registry.get_all_tools()
             schemas = [t.get_metadata() for t in all_tools]
-            self.logger.debug(f"Task type '{task_type}' → returning ALL {len(schemas)} tools.")
+            self.logger.debug(f"Task type '{task_type}' ? returning ALL {len(schemas)} tools.")
             return schemas
 
         # Filter to only the tools in the distribution
@@ -126,16 +126,16 @@ class ToolsetDistributor:
             else:
                 self.logger.warning(f"Tool '{name}' in distribution '{task_type}' not found in registry.")
 
-        self.logger.info(f"Task type '{task_type}' → surfacing {len(schemas)}/{len(self.registry.get_all_tools())} tools (token savings!).")
+        self.logger.info(f"Task type '{task_type}' ? surfacing {len(schemas)}/{len(self.registry.get_all_tools())} tools (token savings!).")
         return schemas
 
     def get_distribution_summary(self) -> str:
         """Return a human-readable summary of tool distributions."""
-        lines = ["📦 **Toolset Distributions:**\n"]
+        lines = ["? **Toolset Distributions:**\n"]
         for task_type, tool_names in self.distributions.items():
             if tool_names:
                 tools_str = ", ".join(f"`{n}`" for n in tool_names)
             else:
                 tools_str = "*(all tools)*"
-            lines.append(f"  • {task_type}: {tools_str}")
+            lines.append(f"  ? {task_type}: {tools_str}")
         return "\n".join(lines)

@@ -155,8 +155,10 @@ class EventBus:
         self._dead_letter_queue: List[DeadLetterEntry] = []
         self._dlq_lock = threading.Lock()
         
-        # Idempotency tracking (event_id -> processed)
+        # Idempotency tracking (bounded to prevent memory leaks in long sessions)
         self._processed_events: Set[str] = set()
+        self._processed_events_order: List[str] = []  # Track insertion order for eviction
+        self._max_tracked_events = 10_000
         self._idempotency_lock = threading.Lock()
         
         logger.info(
@@ -373,7 +375,8 @@ class EventBus:
     
     def _check_idempotency(self, event_id: str) -> bool:
         """
-        Check if event has already been processed
+        Check if event has already been processed.
+        Uses a bounded cache to prevent unbounded memory growth.
         
         Args:
             event_id: Event identifier
@@ -385,6 +388,11 @@ class EventBus:
             if event_id in self._processed_events:
                 return False
             self._processed_events.add(event_id)
+            self._processed_events_order.append(event_id)
+            # Evict oldest entries when cache exceeds max size
+            while len(self._processed_events_order) > self._max_tracked_events:
+                oldest = self._processed_events_order.pop(0)
+                self._processed_events.discard(oldest)
             return True
     
     def _persist_event(self, event: Event) -> None:

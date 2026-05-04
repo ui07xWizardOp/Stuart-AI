@@ -125,9 +125,9 @@ class FileAccessGuard:
         """
         normalized = self._normalize(path)
         if not normalized:
-            # Cannot normalize → reject as suspicious
+            # Cannot normalize ? reject as suspicious
             raise PermissionError(
-                f"🛡️ FileAccessGuard: Path '{path}' could not be resolved. "
+                f"?? FileAccessGuard: Path '{path}' could not be resolved. "
                 f"Operation '{operation}' DENIED."
             )
 
@@ -140,11 +140,11 @@ class FileAccessGuard:
         for blocked in self._blocked:
             if normalized.startswith(blocked):
                 self.logger.warning(
-                    f"🛡️ BLOCKED: Agent attempted to {operation} '{path}' "
+                    f"?? BLOCKED: Agent attempted to {operation} '{path}' "
                     f"(matches blocked path: {blocked})"
                 )
                 raise PermissionError(
-                    f"🛡️ FileAccessGuard: Access to '{path}' is DENIED. "
+                    f"?? FileAccessGuard: Access to '{path}' is DENIED. "
                     f"This path is in the security blocklist. "
                     f"Operation: {operation}"
                 )
@@ -154,11 +154,11 @@ class FileAccessGuard:
             ext = Path(path).suffix.lower()
             if ext in BLOCKED_EXTENSIONS:
                 self.logger.warning(
-                    f"🛡️ BLOCKED: Agent attempted to {operation} file with "
+                    f"?? BLOCKED: Agent attempted to {operation} file with "
                     f"dangerous extension '{ext}': {path}"
                 )
                 raise PermissionError(
-                    f"🛡️ FileAccessGuard: Writing/executing files with extension "
+                    f"?? FileAccessGuard: Writing/executing files with extension "
                     f"'{ext}' is DENIED for security. Path: {path}"
                 )
 

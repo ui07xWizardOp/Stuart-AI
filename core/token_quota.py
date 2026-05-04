@@ -1,5 +1,5 @@
 """
-Token Quota Manager (Phase 9A — Hardening Sprint)
+Token Quota Manager (Phase 9A ? Hardening Sprint)
 
 Inspired by CheetahClaws' quota.py.
 Tracks and enforces token budgets per-session and per-day to prevent
@@ -94,7 +94,7 @@ class TokenQuota:
             if daily_total + estimated_tokens > self.daily_limit * 0.8:
                 pct = ((daily_total + estimated_tokens) / self.daily_limit) * 100
                 self.logger.warning(
-                    f"⚠️ TokenQuota: Daily budget at {pct:.0f}% "
+                    f"?? TokenQuota: Daily budget at {pct:.0f}% "
                     f"({daily_total + estimated_tokens:,} / {self.daily_limit:,})"
                 )
 
@@ -114,7 +114,7 @@ class TokenQuota:
             if provider_key == "cloud" and total > 0:
                 cost = (total / 1000) * self.COST_PER_1K.get("cloud", 0)
                 self.logger.info(
-                    f"💰 TokenQuota: Cloud usage +{total:,} tokens "
+                    f"? TokenQuota: Cloud usage +{total:,} tokens "
                     f"(~${cost:.4f}). Session: {self._session_usage['cloud']:,} | "
                     f"Today: {self._daily_usage['cloud']:,}"
                 )
@@ -124,15 +124,15 @@ class TokenQuota:
         with self._lock:
             self._session_usage = {"cloud": 0, "local": 0}
             self._session_start = time.time()
-            self.logger.info("🔄 TokenQuota: Session counters reset.")
+            self.logger.info("? TokenQuota: Session counters reset.")
 
     def _maybe_reset_daily(self):
         """Reset daily counters if we've rolled past midnight."""
         today = date.today()
         if today != self._current_date:
             self.logger.info(
-                f"📅 TokenQuota: New day detected ({today}). "
-                f"Yesterday's usage — Cloud: {self._daily_usage.get('cloud', 0):,}, "
+                f"? TokenQuota: New day detected ({today}). "
+                f"Yesterday's usage ? Cloud: {self._daily_usage.get('cloud', 0):,}, "
                 f"Local: {self._daily_usage.get('local', 0):,}"
             )
             self._daily_usage = {"cloud": 0, "local": 0}
