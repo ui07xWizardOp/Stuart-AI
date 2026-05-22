@@ -71,31 +71,69 @@ const proceedButton = document.getElementById('proceed-to-checks');
 const startButton = document.getElementById('start-interview-button');
 const backButton = document.getElementById('back-to-onboarding-btn');
 
-// --- Tab Management ---
-function setupTabs() {
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    const tabPanes = document.querySelectorAll('.tab-pane');
-
-    tabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const targetId = btn.getAttribute('data-tab');
-
-            // Update buttons
-            tabBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-
-            // Update panes
-            tabPanes.forEach(p => p.classList.remove('active'));
-            const targetPane = document.getElementById(targetId);
-            if (targetPane) targetPane.classList.add('active');
-
-            // Refresh advanced config if switching to that tab
-            if (targetId === 'advanced-config-tab') {
-                configManager.loadInitialData();
+// --- Stepper Management ---
+function setupStepper() {
+    let currentStep = 1;
+    const totalSteps = 3;
+    const prevBtn = document.getElementById('prev-step-btn');
+    const nextBtn = document.getElementById('next-step-btn');
+    const proceedBtn = document.getElementById('proceed-to-checks');
+    
+    function updateStepper() {
+        // Update Step Indicators
+        document.querySelectorAll('.step').forEach(stepEl => {
+            const stepNum = parseInt(stepEl.getAttribute('data-step'));
+            if (stepNum === currentStep) {
+                stepEl.classList.add('active');
+                stepEl.classList.remove('completed');
+            } else if (stepNum < currentStep) {
+                stepEl.classList.remove('active');
+                stepEl.classList.add('completed');
+            } else {
+                stepEl.classList.remove('active', 'completed');
             }
         });
+        
+        // Update Panes
+        document.querySelectorAll('.step-pane').forEach((pane, index) => {
+            if (index + 1 === currentStep) {
+                pane.classList.add('active');
+            } else {
+                pane.classList.remove('active');
+            }
+        });
+        
+        // Refresh advanced config if step 3
+        if (currentStep === 3) {
+            configManager.loadInitialData();
+        }
+        
+        // Update Buttons
+        prevBtn.style.visibility = currentStep === 1 ? 'hidden' : 'visible';
+        
+        if (currentStep === totalSteps) {
+            nextBtn.style.display = 'none';
+            proceedBtn.style.display = 'inline-flex';
+        } else {
+            nextBtn.style.display = 'inline-flex';
+            proceedBtn.style.display = 'none';
+        }
+    }
+    
+    prevBtn.addEventListener('click', () => {
+        if (currentStep > 1) {
+            currentStep--;
+            updateStepper();
+        }
     });
-
+    
+    nextBtn.addEventListener('click', () => {
+        if (currentStep < totalSteps) {
+            currentStep++;
+            updateStepper();
+        }
+    });
+    
     // Wire up the Fill Demo Data button
     const fillDemoBtn = document.getElementById('fill-demo-btn');
     if (fillDemoBtn) {
@@ -107,6 +145,9 @@ function setupTabs() {
             setTimeout(() => { fillDemoBtn.textContent = '⚡ Demo'; }, 1500);
         });
     }
+    
+    // Initial state
+    updateStepper();
 }
 
 
@@ -357,7 +398,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     setupEventListeners();
     setupDeveloperShortcuts();
     setupPresetHotkeys();
-    setupTabs();
+    setupStepper();
     setupModeToggle();
     hotkeyManager.setEnabled(false);
     switchView('onboarding');

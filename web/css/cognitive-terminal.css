@@ -26,9 +26,30 @@
 
 .bento-cell:hover {
     background: var(--bg-tertiary); /* Tonal shift on hover */
+    transform: translateY(-3px);
     box-shadow: 
-        0 8px 32px rgba(0, 0, 0, 0.4),
-        0 0 12px var(--accent-glow); /* Ambient Cyan Glow: Design system requirement */
+        0 12px 40px rgba(0, 0, 0, 0.5),
+        0 0 16px var(--accent-glow); /* Brand accent glow */
+}
+
+/* Entrance animation for bento cells */
+.bento-cell {
+    animation: bentoCellEnter var(--motion-enter) backwards;
+}
+.bento-cell:nth-child(1) { animation-delay: 0.05s; }
+.bento-cell:nth-child(2) { animation-delay: 0.1s; }
+.bento-cell:nth-child(3) { animation-delay: 0.15s; }
+.bento-cell:nth-child(4) { animation-delay: 0.2s; }
+
+@keyframes bentoCellEnter {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 /* Column Spans */
@@ -89,13 +110,19 @@
 .live-indicator {
     font-size: 0.65rem;
     font-weight: 800;
-    color: var(--electric-cyan);
+    color: var(--stuart-red);
     background: var(--accent-glow);
     padding: var(--space-xs) var(--space-sm);
     border-radius: var(--radius-pill);
     display: flex;
     align-items: center;
     gap: var(--space-xs);
+    animation: liveIndicatorPulse 2s ease-in-out infinite;
+}
+
+@keyframes liveIndicatorPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
 }
 
 /* --- Resource Pulse Widget --- */

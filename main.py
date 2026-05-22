@@ -538,8 +538,13 @@ app.mount("/static", StaticFiles(directory="web"), name="static")
 
 @app.get("/")
 async def read_index(request: Request):
-    """Serves the main index.html file."""
-    return FileResponse(os.path.join('web', 'index.html'))
+    """Serves the main interview.html file."""
+    return FileResponse(os.path.join('web', 'interview.html'))
+
+@app.get("/agent")
+async def read_agent(request: Request):
+    """Serves the agent.html file."""
+    return FileResponse(os.path.join('web', 'agent.html'))
 
 # --- Async Server Management ---
 class UvicornServer:

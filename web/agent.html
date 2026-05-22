@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stuart</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="/static/css/live-interview.css">
+    <link rel="stylesheet" href="/static/css/markdown-styles.css">
+    <link rel="stylesheet" href="/static/css/hotkeys.css">
+    <link rel="stylesheet" href="/static/css/agent-chat.css">
+    <link rel="stylesheet" href="/static/css/cognitive-terminal.css">
+    <link rel="stylesheet" href="/static/css/hil-panel.css">
+    <link rel="stylesheet" href="/static/css/toast.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Prism.js for syntax highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+</head>
+
+<body>
+
+    <!-- Agent Dashboard -->
+    <div id="agent-view" class="view active">
+        <div class="agent-chat-container">
+            <header class="agent-header">
+                <div class="agent-brand">
+                    <div class="agent-brand-logo">STUART SYNTHESIS</div>
+                    <div id="agent-status-pill" class="agent-status-pill offline">
+                        <div class="agent-status-dot"></div>
+                        <span class="agent-status-text">OFFLINE</span>
+                    </div>
+                </div>
+                
+                <div class="agent-controls">
+                    <div class="autonomy-selector">
+                        <button class="autonomy-btn" data-level="restricted" title="Needs approval for everything">Restricted</button>
+                        <button class="autonomy-btn active" data-level="moderate" title="Default safety level">Moderate</button>
+                        <button class="autonomy-btn" data-level="full" title="Autonomous action mode">Full</button>
+                    </div>
+                    <div class="mode-toggle-inline">
+                        <button class="mode-toggle-btn active" data-mode="dashboard">Terminal</button>
+                        <button class="mode-toggle-btn" data-mode="focus">Focus</button>
+                    </div>
+                </div>
+            </header>
+
+            <div class="bento-grid">
+                <!-- Widget: Reasoning Stream (Large) -->
+                <div class="bento-cell reasoning-widget span-8">
+                    <div class="cell-header">
+                        <span class="cell-icon">🧠</span>
+                        <span class="cell-title">REASONING STREAM</span>
+                        <div class="cell-actions">
+                            <span class="live-indicator">LIVE</span>
+                        </div>
+                    </div>
+                    <div id="agent-messages" class="agent-messages">
+                        <div id="agent-welcome" class="agent-welcome">
+                            <div class="agent-welcome-logo">STUART</div>
+                            <p class="agent-welcome-sub">Cognitive Engine Online. Tactical Command Ready.</p>
+                        </div>
+                    </div>
+                    <div id="agent-typing" class="agent-typing">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <span class="typing-label">Stuart is reasoning...</span>
+                    </div>
+                </div>
+
+                <!-- Widget: Resource Pulse (Metrics) -->
+                <div class="bento-cell pulse-widget span-4">
+                    <div class="cell-header">
+                        <span class="cell-icon">⚡</span>
+                        <span class="cell-title">RESOURCE PULSE</span>
+                    </div>
+                    <div class="pulse-content">
+                        <div class="metric-item">
+                            <div class="metric-label">Token Quota (Daily)</div>
+                            <div class="metric-viz">
+                                <svg class="progress-ring" width="100" height="100">
+                                    <circle class="progress-ring__bg" stroke="rgba(255,255,255,0.05)" stroke-width="6" fill="transparent" r="42" cx="50" cy="50"/>
+                                    <circle id="token-progress" class="progress-ring__fill" stroke="var(--electric-cyan)" stroke-width="6" stroke-dashoffset="264" stroke-dasharray="264 264" stroke-linecap="round" fill="transparent" r="42" cx="50" cy="50"/>
+                                </svg>
+                                <div id="token-percent" class="metric-value">0%</div>
+                            </div>
+                            <div id="token-detail" class="metric-sub">0 / 500K Tokens</div>
+                        </div>
+                        <div class="metric-item-mini">
+                            <div class="metric-label">Cognitive Load</div>
+                            <div class="mini-bar-wrap">
+                                <div id="memory-bar" class="mini-bar-fill" style="width: 12%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Widget: Security Perimeter -->
+                <div class="bento-cell perimeter-widget span-4">
+                    <div class="cell-header">
+                        <span class="cell-icon">🛡️</span>
+                        <span class="cell-title">SECURITY PERIMETER</span>
+                    </div>
+                    <div class="perimeter-content">
+                        <div class="status-row">
+                            <span class="status-label">Access Guard</span>
+                            <span id="guard-status" class="status-value active">Secured</span>
+                        </div>
+                        <div class="status-row">
+                            <span class="status-label">DLP Engine</span>
+                            <span id="dlp-status" class="status-value active">Active</span>
+                        </div>
+                        <div class="blocklist-preview">
+                            <div class="mini-label">Recent Redactions</div>
+                            <div id="redaction-list" class="mini-list">
+                                <div class="mini-list-empty">No active threats detected.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Widget: HIL Approval Queue -->
+                <div class="bento-cell hil-widget span-4">
+                    <div class="cell-header">
+                        <span class="cell-icon">⚖️</span>
+                        <span class="cell-title">APPROVAL QUEUE</span>
+                        <span id="hil-count" class="cell-badge">0</span>
+                    </div>
+                    <div id="hil-dash-queue" class="hil-dash-queue">
+                        <div class="hil-empty-dash">
+                            <span class="empty-icon">☕</span>
+                            <p>No pending approvals. Stuart is operating within autonomy limits.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="agent-input-bar">
+                <textarea id="agent-input" class="agent-input" placeholder="Initiate cognitive directive..." rows="1"></textarea>
+                <button id="agent-send-btn" class="agent-send-btn" title="Execute (Enter)">
+                    <span class="send-icon">↑</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/static/js/preset-manager.js"></script>
+    <script type="module" src="/static/js/screenshot-service.js"></script>
+    <script type="module" src="/static/js/agent-chat.js"></script>
+    <script type="module" src="/static/js/hil-panel.js"></script>
+    <script type="module" src="/static/js/agent-main.js"></script>
+
+</body>
+
+</html>
