@@ -28,6 +28,7 @@ class EventType(str, Enum):
     TASK_STARTED = "task_started"
     TASK_COMPLETED = "task_completed"
     TASK_FAILED = "task_failed"
+    TASK_CANCELLED = "task_cancelled"
     PLAN_CREATED = "plan_created"
     EXECUTION_STARTED = "execution_started"
     OBSERVATION_COMPLETED = "observation_completed"

@@ -239,8 +239,8 @@ class TestLLMPlanning:
         assert plan is not None
         assert plan.estimated_duration_seconds == 5  # Calculated from steps
     
-    @patch('hybrid_planner.get_llm_schema_validator')
-    @patch('hybrid_planner.get_llm_retry_manager')
+    @patch('core.llm_schema_validator.get_llm_schema_validator')
+    @patch('core.llm_retry_manager.get_llm_retry_manager')
     def test_call_llm_with_retry_success(
         self,
         mock_get_retry_manager,
@@ -282,8 +282,8 @@ class TestLLMPlanning:
         # Verify retry manager was called
         mock_retry_manager.retry_with_validation.assert_called_once()
     
-    @patch('hybrid_planner.get_llm_schema_validator')
-    @patch('hybrid_planner.get_llm_retry_manager')
+    @patch('core.llm_schema_validator.get_llm_schema_validator')
+    @patch('core.llm_retry_manager.get_llm_retry_manager')
     def test_call_llm_with_retry_failure(
         self,
         mock_get_retry_manager,
@@ -312,8 +312,8 @@ class TestLLMPlanning:
         # Should return None on failure
         assert response is None
     
-    @patch('hybrid_planner.get_llm_schema_validator')
-    @patch('hybrid_planner.get_llm_retry_manager')
+    @patch('core.llm_schema_validator.get_llm_schema_validator')
+    @patch('core.llm_retry_manager.get_llm_retry_manager')
     def test_generate_llm_plan_success(
         self,
         mock_get_retry_manager,

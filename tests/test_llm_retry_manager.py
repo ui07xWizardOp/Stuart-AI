@@ -401,6 +401,19 @@ class TestLLMRetryManager:
 class TestSingletonAccess:
     """Test singleton access pattern"""
     
+    def setup_method(self):
+        """Reset singleton before each test"""
+        import sys
+        # Directly reset the variable in the function's global namespace
+        if '_retry_manager_instance' in get_llm_retry_manager.__globals__:
+            get_llm_retry_manager.__globals__['_retry_manager_instance'] = None
+            
+        # Also clean up any other matching modules in sys.modules
+        for name, module in list(sys.modules.items()):
+            if "llm_retry_manager" in name and module:
+                if hasattr(module, "_retry_manager_instance"):
+                    module._retry_manager_instance = None
+        
     def test_get_llm_retry_manager(self):
         """Test getting singleton instance"""
         manager1 = get_llm_retry_manager()
@@ -408,10 +421,9 @@ class TestSingletonAccess:
         
         # Should be same instance
         assert manager1 is manager2
-    
+        
     def test_get_llm_retry_manager_with_config(self):
         """Test singleton with custom config"""
-        # Note: This test should be run in isolation or the singleton should be reset
         config = RetryConfig(max_retries=5)
         manager = get_llm_retry_manager(config)
         

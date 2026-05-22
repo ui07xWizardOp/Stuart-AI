@@ -411,7 +411,7 @@ class TestEventBus(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.event_bus.publish(invalid_event)
     
-    @patch('Personal Agent.Stuart-AI.events.event_bus.get_db_connection')
+    @patch('events.event_bus.get_db_connection')
     def test_event_replay(self, mock_get_db):
         """Test event replay from database"""
         # Create event bus with persistence enabled

@@ -1375,7 +1375,8 @@ Generate the plan now:"""
         Returns:
             Parsed JSON response or None if all attempts fail
         """
-        from hybrid_planner import get_llm_schema_validator, SchemaType, get_llm_retry_manager, RetryConfig
+        from core.llm_schema_validator import get_llm_schema_validator, SchemaType
+        from core.llm_retry_manager import get_llm_retry_manager, RetryConfig
         
         validator = get_llm_schema_validator()
         retry_manager = get_llm_retry_manager(

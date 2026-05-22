@@ -375,7 +375,9 @@ class WindowManager:
 
         except Exception as e:
             print(f"❌ Error finding window '{title}': {e}")
-            return None    def hide_from_taskbar(self) -> bool:
+            return None
+
+    def hide_from_taskbar(self) -> bool:
         """Hide the window from the taskbar by setting WS_EX_TOOLWINDOW."""
         if not self.is_windows or not self.hwnd:
             print("Cannot hide from taskbar: Not on Windows or no window handle")

@@ -16,8 +16,6 @@
     --stuart-red-dim: #b82d38;
     --stuart-navy: #1d3557;
     --stuart-navy-light: #457b9d;
-    --electric-cyan: #00f7ff; /* Kept for legacy elements if any */
-    --indigo-primary: #6366f1; /* Kept for legacy elements if any */
     --success-green: #34d399;
     --warning-orange: #fb923c;
     --error-red: #ffb4ab;
@@ -50,8 +48,6 @@
     --accent-success: var(--success-green);
     --accent-warning: var(--warning-orange);
     --accent-error: var(--error-red);
-    --accent-indigo-light: #818cf8;
-    --subtle-purple: #a78bfa;
 
     /* === SPACING & RADIUS === */
     --space-xs: 4px;
@@ -722,7 +718,7 @@ select:disabled {
     border: 1px solid var(--border-color);
     background: var(--bg-primary);
     border-radius: var(--radius-md);
-    border-left: 3px solid var(--subtle-purple);
+    border-left: 3px solid var(--stuart-navy-light);
 }
 
 .vision-config-primary h4 {
@@ -731,7 +727,7 @@ select:disabled {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--subtle-purple);
+    color: var(--stuart-navy-light);
 }
 
 .vision-config-secondary {

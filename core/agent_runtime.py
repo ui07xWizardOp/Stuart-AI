@@ -565,12 +565,14 @@ class AgentRuntime:
             self.logger.warning("Cancelling task", task_id=task_id)
             self.cancel_requested = True
             
-            # Publish cancellation event
-            self.event_bus.publish(
-                EventType.TASK_CANCELLED,
-                data={"task_id": task_id},
+            self.event_bus.publish(Event.create(
+                event_type=EventType.TASK_CANCELLED,
+                payload={"task_id": task_id},
+                source_component="agent_runtime",
+                trace_id=self.tracing.get_current_trace_id() or "no-trace",
+                correlation_id=get_correlation_id() or "no-correlation",
                 workflow_id=task_id
-            )
+            ))
             
             return True
         

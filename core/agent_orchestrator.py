@@ -33,6 +33,7 @@ class Intent(str, Enum):
     SEARCH = "search"
     RUN = "run"
     STATUS = "status"
+    UNKNOWN = "unknown"
 
 
 @dataclass
@@ -370,11 +371,11 @@ class AgentOrchestrator:
         
         # Strong indicators
         if re.search(r'\b(create|make|build|setup)\s+(a\s+)?workflow\b', command):
-            score += 50
+            score += 75
         if 'automate' in command:
-            score += 65  # Strong indicator for workflow - increased to beat task verbs
+            score += 85  # Strong indicator for workflow - increased to beat task verbs
         if 'schedule' in command or 'trigger' in command:
-            score += 35
+            score += 70
         
         # Moderate indicators
         if 'every' in command and any(word in command for word in ['day', 'week', 'hour', 'monday', 'morning']):
@@ -396,10 +397,12 @@ class AgentOrchestrator:
         
         # Strong indicators
         if command.startswith('remember'):
-            score += 50
+            score += 70
         if 'note that' in command or 'keep in mind' in command:
-            score += 45
-        if 'store' in command or 'save' in command:
+            score += 65
+        if command.startswith('store') or command.startswith('save'):
+            score += 60
+        elif 'store' in command or 'save' in command:
             score += 40
         
         # Moderate indicators
@@ -420,11 +423,13 @@ class AgentOrchestrator:
         
         # Strong indicators
         if command.startswith('search'):
-            score += 50
-        if 'find' in command or 'look up' in command:
+            score += 70
+        if command.startswith('find') or command.startswith('look up'):
+            score += 65
+        elif 'find' in command or 'look up' in command:
             score += 45
         if 'query' in command:
-            score += 40
+            score += 60
         
         # Moderate indicators
         if 'what is' in command or 'what are' in command:
@@ -446,9 +451,9 @@ class AgentOrchestrator:
         
         # Strong indicators
         if re.search(r'\b(run|execute|start)\s+(the\s+)?workflow\b', command):
-            score += 50
+            score += 70
         if 'execute' in command and 'workflow' in command:
-            score += 45
+            score += 65
         
         # Moderate indicators
         if command.startswith('run'):
@@ -468,11 +473,11 @@ class AgentOrchestrator:
         
         # Strong indicators
         if 'status' in command:
-            score += 50
+            score += 70
         if "what's happening" in command or 'what is happening' in command:
-            score += 45
+            score += 65
         if 'show progress' in command or 'check progress' in command:
-            score += 40
+            score += 60
         
         # Moderate indicators
         if command.startswith('check'):
@@ -830,6 +835,16 @@ class AgentOrchestrator:
         try:
             # Validate plan exists
             if not state.plan:
+                if state.tool_results:
+                    return ReasoningAction(
+                        action_type="observe",
+                        action_data={
+                            "results": state.tool_results,
+                            "result_count": len(state.tool_results)
+                        },
+                        should_continue=True,
+                        reason="Execution completed, proceeding to observation"
+                    )
                 self.logger.warning(
                     "No plan available for execution",
                     extra={"task_id": state.task_id}
@@ -1263,7 +1278,13 @@ class AgentOrchestrator:
                     total_count = len(state.tool_results)
                     success_rate = success_count / total_count if total_count > 0 else 0
 
-                    if success_rate > 0.8 and total_count >= 3:
+                    is_stuck_or_loop = (
+                        plan_modifications.get("break_loop") or
+                        plan_modifications.get("strategy_change_needed") or
+                        plan_modifications.get("request_user_input")
+                    )
+
+                    if success_rate >= 0.75 and total_count >= 3 and not is_stuck_or_loop:
                         reasoning_parts.append(f"Good progress: {success_rate:.0%} success rate")
                         # Maintain high confidence if making good progress
                         confidence_score = max(confidence_score, 0.8)
@@ -1446,7 +1467,7 @@ class AgentOrchestrator:
                 # Check if the last step was successful
                 if state.tool_results:
                     last_result = state.tool_results[-1]
-                    if last_result.get("status") == "success":
+                    if last_result.get("status") != "failed":
                         self.logger.info(
                             "All plan steps completed successfully",
                             extra={

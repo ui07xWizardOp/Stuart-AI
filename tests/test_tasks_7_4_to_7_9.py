@@ -4,6 +4,7 @@ Tests for Tasks 7.4 - 7.9: LLM Planning, Validation, Repair, Fallback, Tool Sele
 import sys
 from unittest.mock import Mock, MagicMock
 from pathlib import Path
+import observability
 
 # Mock dependencies
 mock_span = MagicMock()

@@ -3,6 +3,7 @@ Tests for Obsidian Tool Wrapper (Task 17.4)
 """
 
 import sys
+from pathlib import Path
 import pytest
 from unittest.mock import Mock, MagicMock, patch
 

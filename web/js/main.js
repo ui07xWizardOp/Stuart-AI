@@ -36,9 +36,6 @@ import presetManager from './preset-manager.js';
 import screenshotService from './screenshot-service.js';
 import { ConfigManager } from './config-manager.js';
 import { testStreamingMarkdown, testSampleMarkdown } from './streaming-markdown-demo.js';
-import agentChat from './agent-chat.js';
-import hilPanel from './hil-panel.js';
-
 // Initialize managers
 const stateManager = new StateManager();
 const webSocketHandler = new WebSocketHandler(stateManager);
@@ -59,12 +56,7 @@ const views = {
     onboarding: document.getElementById('onboarding-view'),
     preflight: document.getElementById('preflight-view'),
     live: document.getElementById('live-view'),
-    agent: document.getElementById('agent-view'),
 };
-
-// --- Current App Mode ---
-let currentMode = 'interview'; // 'interview' or 'agent'
-let lastInterviewView = 'onboarding';
 
 const micSelect = document.getElementById('mic-select');
 const proceedButton = document.getElementById('proceed-to-checks');
@@ -155,34 +147,6 @@ function setupStepper() {
 function switchView(targetView) {
     Object.values(views).forEach(view => view.classList.remove('active'));
     views[targetView].classList.add('active');
-    // Track last interview view for mode switching
-    if (['onboarding', 'preflight', 'live'].includes(targetView)) {
-        lastInterviewView = targetView;
-    }
-}
-
-function switchToAgentMode() {
-    currentMode = 'agent';
-    switchView('agent');
-    document.getElementById('mode-btn-interview')?.classList.remove('active');
-    document.getElementById('mode-btn-agent')?.classList.add('active');
-    // Initialize agent chat on first switch
-    agentChat.init();
-    // Initialize HIL Panel (idempotent)
-    if (!window._hilPanelInitialized) {
-        hilPanel.init();
-        window.hilPanel = hilPanel;
-        window._hilPanelInitialized = true;
-    }
-    // Focus input
-    setTimeout(() => document.getElementById('agent-input')?.focus(), 100);
-}
-
-function switchToInterviewMode() {
-    currentMode = 'interview';
-    switchView(lastInterviewView);
-    document.getElementById('mode-btn-agent')?.classList.remove('active');
-    document.getElementById('mode-btn-interview')?.classList.add('active');
 }
 
 function handleOnboarding() {
@@ -352,22 +316,12 @@ function toggleUniversalMute() {
 }
 
 // --- Event Listeners ---
-function setupModeToggle() {
-    const interviewBtn = document.getElementById('mode-btn-interview');
-    const agentBtn = document.getElementById('mode-btn-agent');
-
-    interviewBtn?.addEventListener('click', () => switchToInterviewMode());
-    agentBtn?.addEventListener('click', () => switchToAgentMode());
-
+function setupAgentLauncher() {
     // Alt+A global hotkey
     document.addEventListener('keydown', (e) => {
         if (e.altKey && e.key.toLowerCase() === 'a' && !e.ctrlKey && !e.shiftKey) {
             e.preventDefault();
-            if (currentMode === 'agent') {
-                switchToInterviewMode();
-            } else {
-                switchToAgentMode();
-            }
+            window.open('/agent', '_blank');
         }
     });
 }
@@ -399,7 +353,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     setupDeveloperShortcuts();
     setupPresetHotkeys();
     setupStepper();
-    setupModeToggle();
+    setupAgentLauncher();
     hotkeyManager.setEnabled(false);
     switchView('onboarding');
 });

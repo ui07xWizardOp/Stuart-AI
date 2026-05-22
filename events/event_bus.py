@@ -23,7 +23,7 @@ from .event_types import Event, EventType
 
 # Try to import database connection, but make it optional for testing
 try:
-    from ..database.connection import get_db_connection
+    from database import get_db_connection
     DB_AVAILABLE = True
 except (ImportError, ValueError):
     DB_AVAILABLE = False

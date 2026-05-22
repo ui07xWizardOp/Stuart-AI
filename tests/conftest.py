@@ -6,5 +6,6 @@ sys.path.insert(0, root_dir)
 
 for entry in os.listdir(root_dir):
     full_path = os.path.join(root_dir, entry)
-    if os.path.isdir(full_path) and not entry.startswith('.') and entry not in ('tests', 'venv'):
+    if os.path.isdir(full_path) and not entry.startswith('.') and entry not in ('tests', 'venv', 'qdrant_client_mock', 'watchdog_mock', 'http_utils', 'database'):
         sys.path.insert(0, full_path)
+

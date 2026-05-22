@@ -15,7 +15,7 @@ import logging
 
 class TaskQueue:
     
-    def __init__(self, orchestrator_factory: Callable[[], Any], max_workers: int = 2):
+    def __init__(self, orchestrator_factory: Callable[[], Any] = None, max_workers: int = 2):
         
         try:
             self.logger = get_logging_system()

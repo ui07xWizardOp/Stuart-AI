@@ -9,23 +9,11 @@ import types
 import threading
 import time
 
-# --- Mock heavy dependencies before any project imports ---
-for mod_name in [
-    'psycopg2', 'psycopg2.extras', 'psycopg2.pool',
-    'qdrant_client', 'qdrant_client.models',
-    'openai',
-    'schedule',
-    'watchdog', 'watchdog.observers', 'watchdog.events',
-    'observability', 'observability.logging_system', 'observability.tracing_system',
-    'observability.trace_propagation', 'observability.correlation_tracker',
-    'observability.opentelemetry_exporter',
-    'events', 'events.event_bus', 'events.event_types',
-]:
-    if mod_name not in sys.modules:
-        sys.modules[mod_name] = types.ModuleType(mod_name)
+from unittest.mock import MagicMock
 
-# Stub observability functions
-obs = sys.modules['observability']
+class MockModule(types.ModuleType):
+    def __getattr__(self, name):
+        return MagicMock()
 
 class _StubLogger:
     def info(self, *a, **kw): pass
@@ -33,56 +21,95 @@ class _StubLogger:
     def warning(self, *a, **kw): pass
     def error(self, *a, **kw): pass
 
-obs.get_logging_system = lambda: _StubLogger()
-obs.LogLevel = type('LogLevel', (), {'INFO': 'info', 'DEBUG': 'debug', 'WARNING': 'warning', 'ERROR': 'error'})
-obs.LogEntry = type('LogEntry', (), {})
-obs.initialize_logging = lambda: None
-obs.get_tracing_system = lambda: None
-obs.initialize_tracing = lambda: None
-obs.TracingSystem = type('TracingSystem', (), {})
-obs.Span = type('Span', (), {})
-obs.SpanContext = type('SpanContext', (), {})
-obs.SpanStatus = type('SpanStatus', (), {})
-obs.TracePropagator = type('TracePropagator', (), {})
-obs.TraceContext = type('TraceContext', (), {})
-obs.get_trace_propagator = lambda: None
-obs.CorrelationTracker = type('CorrelationTracker', (), {})
-obs.CorrelationContext = type('CorrelationContext', (), {})
-obs.get_correlation_tracker = lambda: None
-obs.get_correlation_id = lambda: "test"
-obs.set_correlation_id = lambda x: None
-obs.get_or_create_correlation_id = lambda: "test"
-obs.with_correlation = lambda: None
-obs.OpenTelemetryExporter = type('OpenTelemetryExporter', (), {})
-obs.create_opentelemetry_exporter = lambda: None
-obs.OPENTELEMETRY_AVAILABLE = False
-
-for sub_name in ['logging_system', 'tracing_system', 'trace_propagation', 
-                  'correlation_tracker', 'opentelemetry_exporter']:
-    sub = sys.modules[f'observability.{sub_name}']
-    for attr in dir(obs):
-        if not attr.startswith('_'):
-            setattr(sub, attr, getattr(obs, attr))
-
-# Stub events
-events_mod = sys.modules['events']
-events_mod.get_event_bus = lambda: type('MockBus', (), {'publish': lambda self, e: None, 'subscribe': lambda self, *a, **kw: None})()
-
 class _MockEventType:
     TASK_STARTED = "task_started"
     CONFIG_HOT_RELOADED = "config_hot_reloaded"
-events_mod.EventType = _MockEventType
 
 class _MockEvent:
     def __init__(self, **kw): pass
     @classmethod
     def create(cls, **kw): return cls()
     def validate(self): return True
-events_mod.Event = _MockEvent
 
-sys.modules['events.event_bus'].EventBus = type('EventBus', (), {})
-sys.modules['events.event_types'].EventType = _MockEventType
-sys.modules['events.event_types'].Event = _MockEvent
+import pytest
+
+@pytest.fixture(scope="module", autouse=True)
+def mock_dependencies():
+    original_modules = {}
+    mocked_names = [
+        'psycopg2', 'psycopg2.extras', 'psycopg2.pool',
+        'qdrant_client', 'qdrant_client.models', 'qdrant_client.http', 'qdrant_client.http.models',
+        'openai',
+        'schedule',
+        'watchdog', 'watchdog.observers', 'watchdog.events',
+        'observability', 'observability.logging_system', 'observability.tracing_system',
+        'observability.trace_propagation', 'observability.correlation_tracker',
+        'observability.opentelemetry_exporter',
+        'events', 'events.event_bus', 'events.event_types',
+    ]
+    
+    for mod_name in mocked_names:
+        if mod_name in sys.modules:
+            original_modules[mod_name] = sys.modules[mod_name]
+        sys.modules[mod_name] = MockModule(mod_name)
+
+    # Stub observability functions
+    obs = sys.modules['observability']
+    obs.get_logging_system = lambda: _StubLogger()
+    obs.LogLevel = type('LogLevel', (), {'INFO': 'info', 'DEBUG': 'debug', 'WARNING': 'warning', 'ERROR': 'error'})
+    obs.LogEntry = type('LogEntry', (), {})
+    obs.initialize_logging = lambda: None
+    obs.get_tracing_system = lambda: None
+    obs.initialize_tracing = lambda: None
+    obs.TracingSystem = type('TracingSystem', (), {})
+    obs.Span = type('Span', (), {})
+    obs.SpanContext = type('SpanContext', (), {})
+    obs.SpanStatus = type('SpanStatus', (), {})
+    obs.TracePropagator = type('TracePropagator', (), {})
+    obs.TraceContext = type('TraceContext', (), {})
+    obs.get_trace_propagator = lambda: None
+    obs.CorrelationTracker = type('CorrelationTracker', (), {})
+    obs.CorrelationContext = type('CorrelationContext', (), {})
+    obs.get_correlation_tracker = lambda: None
+    obs.get_correlation_id = lambda: "test"
+    obs.set_correlation_id = lambda x: None
+    obs.get_or_create_correlation_id = lambda: "test"
+    obs.with_correlation = lambda: None
+    obs.OpenTelemetryExporter = type('OpenTelemetryExporter', (), {})
+    obs.create_opentelemetry_exporter = lambda: None
+    obs.OPENTELEMETRY_AVAILABLE = False
+
+    for sub_name in ['logging_system', 'tracing_system', 'trace_propagation', 
+                      'correlation_tracker', 'opentelemetry_exporter']:
+        sub = sys.modules[f'observability.{sub_name}']
+        for attr in dir(obs):
+            if not attr.startswith('_'):
+                setattr(sub, attr, getattr(obs, attr))
+
+    # Stub events
+    events_mod = sys.modules['events']
+    events_mod.get_event_bus = lambda: type('MockBus', (), {'publish': lambda self, e: None, 'subscribe': lambda self, *a, **kw: None})()
+    events_mod.EventType = _MockEventType
+    events_mod.Event = _MockEvent
+    
+    sys.modules['events.event_bus'].EventBus = type('EventBus', (), {})
+    sys.modules['events.event_types'].EventType = _MockEventType
+    sys.modules['events.event_types'].Event = _MockEvent
+
+    yield
+
+    # Teardown: restore sys.modules
+    for mod_name in mocked_names:
+        if mod_name in original_modules:
+            sys.modules[mod_name] = original_modules[mod_name]
+        else:
+            sys.modules.pop(mod_name, None)
+
+    # Force unloading of project modules to prevent caching mock references
+    project_prefixes = ('core', 'tools', 'security', 'database', 'automation')
+    for key in list(sys.modules.keys()):
+        if key.split('.')[0] in project_prefixes:
+            sys.modules.pop(key, None)
 
 import pytest
 
