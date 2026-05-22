@@ -32,6 +32,7 @@ from tools.toolset_distributor import ToolsetDistributor
 from events.event_bus import EventBus, Event
 from cognitive.plan_library import PlanLibrary
 from cognitive.telos_framework import TelosFramework
+from security.trust_levels import TrustLevel, TrustContext
 
 @dataclass
 class ReasoningStepResult:
@@ -79,11 +80,13 @@ class Orchestrator:
         slash_router: SlashCommandRouter = None,
         toolset_distributor: ToolsetDistributor = None,
         telos_framework: Optional[TelosFramework] = None,
-        max_reasoning_steps: int = 5
+        max_reasoning_steps: int = 5,
+        trust_level: TrustLevel = TrustLevel.VERIFIED
     ):
         """Initializes the Orchestrator with all necessary cognitive and safety sub-systems."""
         self.logger = get_logging_system()
         self.event_bus = event_bus
+        self.trust_level = trust_level
         self.memory = memory
         self.router = router
         self.prompt_manager = prompt_manager
@@ -312,7 +315,8 @@ class Orchestrator:
                 self.logger.info(f"Executing Tool Call: {tool_name}.{action}")
                 
                 # Execute Sandbox
-                result = self.executor.execute_tool(tool_name, action, params, context=None)
+                trust_ctx = TrustContext(level=self.trust_level)
+                result = self.executor.execute_tool(tool_name, action, params, context=None, trust_context=trust_ctx)
                 
                 # Track executed tools for PlanLibrary recording
                 self._current_loop_tools.append({"tool": tool_name, "action": action, "parameters": params})

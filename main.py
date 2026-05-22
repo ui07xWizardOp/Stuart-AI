@@ -251,6 +251,9 @@ class GlobalCommandMonitor:
 # Create global command monitor instance
 command_monitor = GlobalCommandMonitor()
 
+# Global reference for the periodic health monitor
+health_monitor = None
+
 # --- FastAPI App Setup ---
 app = FastAPI()
 app.include_router(websocket.router)
@@ -294,9 +297,18 @@ def boot_pca_brain():
         from automation.cron_manager import CronManager
         from security.file_access_guard import FileAccessGuard
         from core.system_mode_manager import SystemModeManager
+        from security.vault import SecureVault
+        from security.command_allowlist import CommandAllowlist
 
         from events import initialize_event_bus
         event_bus = initialize_event_bus()
+
+        # Phase 15: Secure Vault (API Key encryption at rest)
+        try:
+            secure_vault = SecureVault()
+            secure_vault.migrate_from_env()
+        except Exception as e:
+            print(f" Failed to init SecureVault: {e}")
 
         # Phase 11: Alert Router  push FLASH/PRIORITY events to OS
         try:
@@ -344,9 +356,15 @@ def boot_pca_brain():
         # Phase 9A: Session Checkpoint  auto-save/resume on crash
         checkpoint = SessionCheckpoint()
         mode_manager = SystemModeManager()
+        command_allowlist = CommandAllowlist()
 
         registry = ToolRegistry()
-        executor = ToolSandboxExecutor(registry=registry, approval_system=approval_system, mode_manager=mode_manager)
+        executor = ToolSandboxExecutor(
+            registry=registry, 
+            approval_system=approval_system, 
+            mode_manager=mode_manager,
+            command_allowlist=command_allowlist
+        )
 
         # Phase 11: MCP Bridge Manager
         try:
@@ -465,6 +483,51 @@ def boot_pca_brain():
         except Exception as e:
             print(f" Failed to init SkillsMarketplace: {e}")
             skills_marketplace = None
+
+        # Phase 14: Agent Orchestration (Batch Runner, Supervisor, Skill Evolver, Verifiable Iteration)
+        try:
+            from core.sub_agent_pool import SubAgentPool
+            from core.batch_runner import BatchRunner
+            from core.supervisor import SupervisorAgent
+            from cognitive.skill_evolver import SkillEvolver
+            from cognitive.verifiable_iteration import VerifiableIterator
+            
+            def orchestrator_factory():
+                from core.orchestrator import Orchestrator
+                from memory.memory_system import MemorySystem
+                from security.trust_levels import TrustLevel
+                return Orchestrator(
+                    event_bus=event_bus,
+                    memory=MemorySystem(),
+                    router=router,
+                    prompt_manager=prompt_manager,
+                    executor=executor,
+                    context_manager=context_manager,
+                    plan_library=plan_library,
+                    telos_framework=telos_framework,
+                    max_reasoning_steps=5,
+                    trust_level=TrustLevel.UNTRUSTED
+                )
+                
+            sub_agent_pool = SubAgentPool(orchestrator_factory=orchestrator_factory, max_workers=3)
+            batch_runner = BatchRunner(sub_agent_pool=sub_agent_pool, event_bus=event_bus)
+            supervisor = SupervisorAgent(router=router, sub_agent_pool=sub_agent_pool, event_bus=event_bus)
+            skill_evolver = SkillEvolver(plan_library=plan_library, router=router, event_bus=event_bus)
+            verifier = VerifiableIterator(router=router, event_bus=event_bus)
+            
+            from cognitive.aop_framework import AOPContext
+            AOPContext.configure(
+                orchestrator=orchestrator,
+                supervisor=supervisor,
+                verifier=verifier
+            )
+            print(" Phase 14 Orchestration features initialized successfully.")
+        except Exception as e:
+            print(f" Failed to init Phase 14 Orchestration features: {e}")
+            batch_runner = None
+            supervisor = None
+            skill_evolver = None
+            verifier = None
         
         slash_router.set_context(
             orchestrator=orchestrator,
@@ -477,6 +540,10 @@ def boot_pca_brain():
             telos=telos_framework,
             tracing=tracing,
             skills_marketplace=skills_marketplace,
+            batch_runner=batch_runner,
+            supervisor=supervisor,
+            skill_evolver=skill_evolver,
+            verifier=verifier,
             boot_time=_time.time(),
         )
 
@@ -506,6 +573,22 @@ def boot_pca_brain():
         if approval_system and hasattr(approval_system, 'set_gui_queue_hooks'):
             approval_system.set_gui_queue_hooks(queue_hil_request, wait_for_hil_decision)
             print(" GUI HIL queue hooks injected into ApprovalSystem.")
+
+        # Initialize and start periodic health checks (Feature #60)
+        global health_monitor
+        try:
+            from automation.health_monitor import StuartHealthMonitor
+            health_monitor = StuartHealthMonitor(
+                event_bus=event_bus,
+                orchestrator=orchestrator,
+                cron_manager=cron_manager,
+                file_access_guard=file_access_guard,
+                check_interval=300
+            )
+            health_monitor.start()
+            print(" Periodic Health Checks monitor started (every 5 minutes).")
+        except Exception as e:
+            print(f" Failed to initialize StuartHealthMonitor: {e}")
         
         # Phase 13: Telegram Bot (optional  only if token is set)
         try:
@@ -517,6 +600,33 @@ def boot_pca_brain():
                 print(" Telegram bot channel started.")
         except Exception as e:
             print(f"Failed to start Telegram bot: {e}")
+
+        # Phase 13: Discord Bot (optional only if token is set)
+        try:
+            discord_token = os.environ.get("DISCORD_BOT_TOKEN")
+            if discord_token:
+                from channels.discord_bot import StuartDiscordBot
+                discord_bot = StuartDiscordBot(token=discord_token, orchestrator=orchestrator)
+                discord_bot.start()
+                print(" Discord bot channel started.")
+        except Exception as e:
+            print(f"Failed to start Discord bot: {e}")
+
+        # Phase 13: Slack Bot (optional only if tokens are set)
+        try:
+            slack_bot_token = os.environ.get("SLACK_BOT_TOKEN")
+            slack_app_token = os.environ.get("SLACK_APP_TOKEN")
+            if slack_bot_token and slack_app_token:
+                from channels.slack_bot import StuartSlackBot
+                slack_bot = StuartSlackBot(
+                    bot_token=slack_bot_token,
+                    app_token=slack_app_token,
+                    orchestrator=orchestrator
+                )
+                slack_bot.start()
+                print(" Slack bot channel started.")
+        except Exception as e:
+            print(f"Failed to start Slack bot: {e}")
         
         logger.info("PCA Orchestrator brain booted successfully (Phase 9B - Power Features).")
         print("PCA Orchestrator brain booted successfully (Phase 9B - Power Features).")
@@ -780,6 +890,11 @@ def setup_webview_window():
     def on_window_closing():
         print(" Window closing, shutting down services...")
         asyncio_service_thread.stop()
+        if health_monitor:
+            try:
+                health_monitor.stop()
+            except Exception as e:
+                print(f"Error stopping health monitor: {e}")
         return True  # Allow window to close
     
     window.events.shown += on_window_shown
@@ -815,6 +930,11 @@ def main():
         # Ensure cleanup
         print(" Final cleanup...")
         asyncio_service_thread.stop()
+        if health_monitor:
+            try:
+                health_monitor.stop()
+            except Exception as e:
+                print(f"Error stopping health monitor: {e}")
         print(" Application shutdown complete")
 
 if __name__ == '__main__':

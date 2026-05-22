@@ -58,6 +58,7 @@ class LiveInterviewUI {
         this.endButton = document.getElementById('end-interview-btn');
         this.resetButton = document.getElementById('reset-interview-btn');
         this.muteButton = document.getElementById('mute-btn');
+        this.agentVoiceButton = document.getElementById('agent-voice-btn');
         
         // Listen to the mute manager for state changes
         muteManager.on('stateChange', (status) => this.handleMuteStateChange(status));
@@ -78,6 +79,10 @@ class LiveInterviewUI {
         
         if (this.muteButton) {
             this.muteButton.addEventListener('click', () => this.toggleMute());
+        }
+        
+        if (this.agentVoiceButton) {
+            this.agentVoiceButton.addEventListener('click', () => this.toggleAgentVoice());
         }
         
         // Setup smart scroll detection
@@ -1262,6 +1267,7 @@ class LiveInterviewUI {
     // Central handler for all mute state changes
     handleMuteStateChange(status) {
         this.updateMuteButton(status.microphone);
+        this.updateAgentVoiceButton(status.agentVoice);
         this.showActivity(); // Re-evaluates the activity indicator text
     }
 
@@ -1274,6 +1280,25 @@ class LiveInterviewUI {
             } else {
                 this.muteButton.classList.remove('muted');
                 this.muteButton.title = 'Mute microphone input to app (Alt+M)';
+            }
+        }
+    }
+
+    // Toggle agent voice mute via the UI button
+    toggleAgentVoice() {
+        muteManager.toggleAgentVoiceMute();
+    }
+
+    // Update agent voice button appearance
+    updateAgentVoiceButton(isMuted) {
+        if (this.agentVoiceButton) {
+            const voiceText = this.agentVoiceButton.querySelector('.voice-text');
+            if (isMuted) {
+                this.agentVoiceButton.classList.add('muted');
+                if (voiceText) voiceText.textContent = 'Voice Off';
+            } else {
+                this.agentVoiceButton.classList.remove('muted');
+                if (voiceText) voiceText.textContent = 'Voice On';
             }
         }
     }

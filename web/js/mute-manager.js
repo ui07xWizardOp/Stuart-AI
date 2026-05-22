@@ -9,6 +9,7 @@ class MuteManager {
         // --- State Properties ---
         this._isMicrophoneMuted = true; // Traditional microphone mute (input to app)
         this._isUniversallyMuted = false; // System-wide pause for all audio processing
+        this._isAgentVoiceMuted = false; // TTS mute for Agent Voice
 
         // --- Event Handling ---
         this.eventListeners = new Map();
@@ -65,6 +66,27 @@ class MuteManager {
         return this._isUniversallyMuted;
     }
 
+    // --- Agent Voice Mute (TTS) ---
+    setAgentVoiceMute(isMuted) {
+        if (this._isAgentVoiceMuted === isMuted) return;
+        this._isAgentVoiceMuted = isMuted;
+        devLog(`🔊 Agent Voice mute state changed to: ${isMuted}`);
+        this.emit('agentVoiceMuteChange', this._isAgentVoiceMuted);
+        this.emit('stateChange', this.getMuteStatus());
+
+        // Notify the backend about the change
+        if (typeof window.sendSocketMessage === 'function') {
+            window.sendSocketMessage('config_update', {
+                isAgentVoiceMuted: this._isAgentVoiceMuted
+            });
+        }
+    }
+
+    toggleAgentVoiceMute() {
+        this.setAgentVoiceMute(!this._isAgentVoiceMuted);
+        return this._isAgentVoiceMuted;
+    }
+
     // --- State Getters ---
     isMicrophoneMuted() {
         return this._isMicrophoneMuted;
@@ -72,6 +94,10 @@ class MuteManager {
 
     isUniversallyMuted() {
         return this._isUniversallyMuted;
+    }
+
+    isAgentVoiceMuted() {
+        return this._isAgentVoiceMuted;
     }
 
     // Returns true if ANY form of mute is active that would stop audio processing.
@@ -83,6 +109,7 @@ class MuteManager {
         return {
             microphone: this.isMicrophoneMuted(),
             universal: this.isUniversallyMuted(),
+            agentVoice: this.isAgentVoiceMuted(),
             isAudioPaused: this.isAudioPaused(),
             description: this.getCurrentStateDescription()
         };
@@ -112,4 +139,5 @@ window.pauseInterview = window.enableUniversalMute; // Alias
 window.resumeInterview = window.disableUniversalMute; // Alias
 
 // For modules
+window.toggleAgentVoiceMute = () => muteManager.toggleAgentVoiceMute();
 export default muteManager;

@@ -113,15 +113,24 @@ async def save_ai_providers(request: SaveProvidersRequest):
 
 @router.get("/api/deepgram-key")
 async def get_deepgram_key():
-    """Retrieves the current DEEPGRAM_API_KEY from .env."""
-    key = env_manager.get_value("DEEPGRAM_API_KEY")
+    """Retrieves the current DEEPGRAM_API_KEY from secure vault, falling back to .env."""
+    from security.vault import get_vault_secret
+    key = get_vault_secret("DEEPGRAM_API_KEY")
+    if key is None or key == "<migrated_to_vault>":
+        key = env_manager.get_value("DEEPGRAM_API_KEY")
+    if key == "<migrated_to_vault>":
+        key = ""
     return {"key": key or ""}
+
 
 @router.post("/api/save-deepgram-key")
 async def save_deepgram_key(request: SaveKeyRequest):
-    """Updates the DEEPGRAM_API_KEY in the .env file."""
+    """Updates the DEEPGRAM_API_KEY in the secure vault and writes placeholder to .env."""
     try:
-        success = env_manager.update_key("DEEPGRAM_API_KEY", request.key)
+        from security.vault import get_vault
+        vault = get_vault()
+        vault.set_secret("DEEPGRAM_API_KEY", request.key)
+        success = env_manager.update_key("DEEPGRAM_API_KEY", "<migrated_to_vault>")
         if success:
             return {"success": True, "message": "Deepgram API key saved successfully"}
         else:

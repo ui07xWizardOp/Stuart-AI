@@ -19,6 +19,8 @@
     --success-green: #34d399;
     --warning-orange: #fb923c;
     --error-red: #ffb4ab;
+    --electric-cyan: #00f7ff;
+    --electric-cyan-dim: rgba(0, 247, 255, 0.7);
 
     /* === SEMANTIC MAP === */
     --bg-primary: var(--surface);

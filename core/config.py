@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     All defaults should be production-safe values that match .env file settings.
     """
     # Required API Keys (no defaults - must be provided)
-    DEEPGRAM_API_KEY: str
+    DEEPGRAM_API_KEY: str = ""
     
     
     # Logging Configuration
@@ -40,6 +40,9 @@ env_settings = Settings(_env_file=".env", _env_file_encoding='utf-8')
 # By passing `env_settings` as keyword arguments, we force its values to take
 # priority over any system environment variables that Pydantic would otherwise load.
 settings = Settings(**env_settings.model_dump())
+
+from security.vault import get_vault_secret
+settings.DEEPGRAM_API_KEY = get_vault_secret("DEEPGRAM_API_KEY") or settings.DEEPGRAM_API_KEY
 
 
 def print_config_debug():

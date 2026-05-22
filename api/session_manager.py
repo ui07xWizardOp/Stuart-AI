@@ -8,6 +8,7 @@ from .utils import send_json
 from services.llm_service import MultiLLMManager
 from services.stt_service import DeepgramManager
 from services.vision_service import vision_service
+from services.tts_service import tts_service
 
 # Session TTL: 30 minutes of inactivity with no WebSocket connected
 SESSION_TTL_SECONDS = 30 * 60
@@ -26,7 +27,8 @@ class InterviewSession:
         self.state: Dict[str, any] = {
             "is_muted": False,
             "process_all_speakers": True,
-            "is_universally_muted": False
+            "is_universally_muted": False,
+            "is_agent_voice_muted": False
         }
         self.transcript_buffer: str = ""
         self.silence_timer: Optional[asyncio.Task] = None
@@ -96,6 +98,8 @@ class InterviewSession:
             self.state["process_all_speakers"] = payload['processAllSpeakers']
         if 'isUniversallyMuted' in payload:
             self.state["is_universally_muted"] = payload['isUniversallyMuted']
+        if 'isAgentVoiceMuted' in payload:
+            self.state["is_agent_voice_muted"] = payload['isAgentVoiceMuted']
         await self._send_json("config_updated", self.state)
 
     async def handle_switch_preset(self, payload: dict):
@@ -235,6 +239,13 @@ class InterviewSession:
             
             await self._send_json("ai_answer_complete", {"answer": answer, **result_info})
             print(f"[AI] STREAMING COMPLETE for session {self.session_id}")
+
+            # Generate and send TTS audio
+            if not self.state.get("is_agent_voice_muted", False) and answer:
+                audio_b64 = await tts_service.generate_audio_base64(answer)
+                if audio_b64:
+                    await self._send_json("ai_audio", {"audio_base64": audio_b64})
+                    print(f"[TTS] Audio sent for session {self.session_id}")
 
         except Exception as e:
             print(f"[CRITICAL] Error processing transcript for session {self.session_id}: {e}")

@@ -40,7 +40,13 @@ beautifulsoup4
 
 # ── Communication Channels ──────────────────────────────
 python-telegram-bot
+discord.py
+slack-sdk
 
 # ── Testing ─────────────────────────────────────────────
 pytest
 SQLAlchemy
+
+# ── Security & Encryption ───────────────────────────────
+cryptography
+keyring

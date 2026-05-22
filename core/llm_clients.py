@@ -9,7 +9,7 @@ Provides physical HTTP execution interfaces for:
 import os
 import json
 import requests
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
 
 from observability import get_logging_system
@@ -17,7 +17,10 @@ from observability import get_logging_system
 load_dotenv()
 
 class BaseLLMClient:
-    def generate_chat(self, messages: List[Dict[str, str]]) -> str:
+    def generate_chat(self, messages: List[Dict[str, str]], model_name: Optional[str] = None, temperature: Optional[float] = None) -> str:
+        raise NotImplementedError
+
+    def chat(self, messages: List[Dict[str, str]], model_name: Optional[str] = None, temperature: Optional[float] = None, **kwargs) -> str:
         raise NotImplementedError
 
 class OllamaClient(BaseLLMClient):
@@ -32,18 +35,20 @@ class OllamaClient(BaseLLMClient):
         self.host = host
         self.api_url = f"{self.host}/api/chat"
 
-    def generate_chat(self, messages: List[Dict[str, str]]) -> str:
+    def generate_chat(self, messages: List[Dict[str, str]], model_name: Optional[str] = None, temperature: Optional[float] = None) -> str:
+        model = model_name or self.model_name
+        temp = temperature if temperature is not None else 0.1
         payload = {
-            "model": self.model_name,
+            "model": model,
             "messages": messages,
             "stream": False,
             "options": {
-                "temperature": 0.1
+                "temperature": temp
             }
         }
         
         try:
-            self.logger.debug(f"Routing to local Ollama ({self.model_name})...")
+            self.logger.debug(f"Routing to local Ollama ({model})...")
             response = requests.post(self.api_url, json=payload, timeout=120)
             response.raise_for_status()
             
@@ -57,6 +62,9 @@ class OllamaClient(BaseLLMClient):
             self.logger.error(f"Ollama generation failed: {e}")
             raise
 
+    def chat(self, messages: List[Dict[str, str]], model_name: Optional[str] = None, temperature: Optional[float] = None, **kwargs) -> str:
+        return self.generate_chat(messages, model_name=model_name, temperature=temperature)
+
 class OpenAIClient(BaseLLMClient):
     """
     Connects to OpenAI API.
@@ -65,7 +73,8 @@ class OpenAIClient(BaseLLMClient):
     def __init__(self, model_name: str = "gpt-4o"):
         self.logger = get_logging_system()
         self.model_name = model_name
-        self.api_key = os.getenv("OPENAI_API_KEY")
+        from security.vault import get_vault_secret
+        self.api_key = get_vault_secret("OPENAI_API_KEY")
         
         if not self.api_key:
             self.logger.warning("OPENAI_API_KEY missing from environment. Cloud routing will fail.")
@@ -77,18 +86,23 @@ class OpenAIClient(BaseLLMClient):
             self.logger.error("openai package not installed.")
             self.client = None
 
-    def generate_chat(self, messages: List[Dict[str, str]]) -> str:
+    def generate_chat(self, messages: List[Dict[str, str]], model_name: Optional[str] = None, temperature: Optional[float] = None) -> str:
         if not self.client:
             raise RuntimeError("OpenAI client not installed or missing key.")
             
+        model = model_name or self.model_name
+        temp = temperature if temperature is not None else 0.1
         try:
-            self.logger.debug(f"Routing to Cloud OpenAI ({self.model_name})...")
+            self.logger.debug(f"Routing to Cloud OpenAI ({model})...")
             response = self.client.chat.completions.create(
-                model=self.model_name,
+                model=model,
                 messages=messages,
-                temperature=0.1
+                temperature=temp
             )
             return response.choices[0].message.content
         except Exception as e:
             self.logger.error(f"OpenAI generation failed: {e}")
             raise
+
+    def chat(self, messages: List[Dict[str, str]], model_name: Optional[str] = None, temperature: Optional[float] = None, **kwargs) -> str:
+        return self.generate_chat(messages, model_name=model_name, temperature=temperature)

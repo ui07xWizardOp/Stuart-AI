@@ -146,6 +146,9 @@ export class WebSocketHandler {
             case 'ai_answer_complete':
                 this.handleAiAnswerComplete(data.payload);
                 break;
+            case 'ai_audio':
+                this.handleAiAudio(data.payload);
+                break;
             case 'preset_initialized':
                 this.handlePresetInitialized(data.payload);
                 break;
@@ -212,6 +215,18 @@ export class WebSocketHandler {
 
     handleAiAnswerComplete(payload) {
         liveInterviewUI.finalizeStreamingResponse(payload);
+    }
+
+    handleAiAudio(payload) {
+        if (payload.audio_base64) {
+            try {
+                const audioUrl = "data:audio/mp3;base64," + payload.audio_base64;
+                const audio = new Audio(audioUrl);
+                audio.play().catch(e => console.error("Agent voice audio play failed:", e));
+            } catch (e) {
+                console.error("Error parsing AI audio payload:", e);
+            }
+        }
     }
 
     handlePresetInitialized(payload) {

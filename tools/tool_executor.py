@@ -24,6 +24,8 @@ from .base import BaseTool, ToolRiskLevel, ToolResult
 from security.capability_tokens import CapabilityTokenSystem
 from security.dlp_engine import DataLossPreventionEngine
 from security.approval_system import ApprovalSystem
+from security.command_allowlist import CommandAllowlist
+from security.trust_levels import TrustLevel, TrustContext, has_sufficient_trust
 from core.system_mode_manager import SystemModeManager
 
 class RestrictedRuntimeTimeoutError(Exception):
@@ -44,7 +46,8 @@ class ToolSandboxExecutor:
         capability_system: Optional[CapabilityTokenSystem] = None,
         dlp_engine: Optional[DataLossPreventionEngine] = None,
         approval_system: Optional[ApprovalSystem] = None,
-        mode_manager: Optional[SystemModeManager] = None
+        mode_manager: Optional[SystemModeManager] = None,
+        command_allowlist: Optional[CommandAllowlist] = None
     ):
         self.logger = get_logging_system()
         self.registry = registry
@@ -53,6 +56,7 @@ class ToolSandboxExecutor:
         self.dlp_engine = dlp_engine
         self.approval_system = approval_system
         self.mode_manager = mode_manager
+        self.command_allowlist = command_allowlist or CommandAllowlist()
         self.logger.info("ToolSandboxExecutor initialized")
 
     def execute_tool(
@@ -61,7 +65,8 @@ class ToolSandboxExecutor:
         action: str,
         parameters: Dict[str, Any],
         context: Any,  # ExecutionContext
-        capability_token_id: Optional[str] = None
+        capability_token_id: Optional[str] = None,
+        trust_context: Optional[TrustContext] = None
     ) -> Any:
         """
         Main entry point for executing a registered tool action.
@@ -88,7 +93,24 @@ class ToolSandboxExecutor:
         # 2. Parameter Validation
         self._validate_parameters(tool_name, tool.parameter_schema, parameters)
 
-        # 2. Risk Evaluation & HIL Interception (Task 30)
+        # 2b. Command Allowlist Check (Feature #52)
+        # Inspect parameters for typical command or code fields
+        if self.command_allowlist:
+            for key in ["command", "cmd", "code", "script"]:
+                if key in parameters and isinstance(parameters[key], str):
+                    # We only enforce on HIGH/CRITICAL tools like terminal or python execution
+                    if tool.risk_level in [ToolRiskLevel.HIGH, ToolRiskLevel.CRITICAL]:
+                        self.command_allowlist.enforce(parameters[key])
+
+        # 2c. Trust Level Enforcement (Feature #48)
+        # Untrusted sources cannot execute HIGH/CRITICAL tools
+        active_trust = trust_context.level if trust_context else TrustLevel.VERIFIED
+        if tool.risk_level in [ToolRiskLevel.HIGH, ToolRiskLevel.CRITICAL]:
+            if not has_sufficient_trust(active_trust, TrustLevel.VERIFIED):
+                self.logger.error(f"Execution denied: Tool '{tool_name}' requires at least VERIFIED trust, got {active_trust.value}.")
+                raise PermissionError(f"Trust boundary violation: Cannot execute {tool.risk_level.value} tool from {active_trust.value} context.")
+
+        # 3. Risk Evaluation & HIL Interception (Task 30)
         if self.approval_system:
             self.approval_system.eval_risk(tool.name, action, tool.risk_level)
 

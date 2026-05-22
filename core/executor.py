@@ -19,6 +19,7 @@ from observability import get_logging_system, get_tracing_system, get_correlatio
 from events import get_event_bus, EventType, Event
 from core.hybrid_planner import TaskPlan, PlanStatus
 from core.llm_retry_manager import LLMRetryManager, RetryConfig, RetryStrategy
+from security.trust_levels import TrustLevel, TrustContext
 
 
 # ---------------------------------------------------------------------------
@@ -160,6 +161,7 @@ class ToolExecutorInterface:
         action: str,
         parameters: Dict[str, Any],
         context: ExecutionContext,
+        trust_context: Optional[Any] = None,
     ) -> Any:
         """
         Execute a tool action with the given parameters.
@@ -205,6 +207,7 @@ class MockToolExecutor(ToolExecutorInterface):
         action: str,
         parameters: Dict[str, Any],
         context: ExecutionContext,
+        trust_context: Optional[Any] = None,
     ) -> Any:
         key = f"{tool_name}:{action}"
         if key in self._errors:
@@ -311,10 +314,12 @@ class Executor:
         retry_config: Optional[RetryConfig] = None,
         result_store: Optional[InMemoryResultStore] = None,
         max_step_retries: int = 3,
+        trust_level: TrustLevel = TrustLevel.VERIFIED,
     ) -> None:
         self.logger = get_logging_system()
         self.tracer = get_tracing_system()
         self.event_bus = get_event_bus()
+        self.trust_level = trust_level
 
         self.tool_executor: ToolExecutorInterface = tool_executor or ToolExecutorInterface()
         self.retry_manager = LLMRetryManager(
@@ -503,7 +508,8 @@ class Executor:
         try:
             # Build parameters: merge step params + prior step outputs for dependencies
             parameters = self._build_step_parameters(step, context)
-            output = self.tool_executor.execute_tool(tool, action, parameters, context)
+            trust_ctx = TrustContext(level=self.trust_level)
+            output = self.tool_executor.execute_tool(tool, action, parameters, context, trust_context=trust_ctx)
             completed_at = datetime.utcnow()
 
             self._emit_event(EventType.TOOL_EXECUTION_COMPLETED, context.plan_id, context.task_id, {
